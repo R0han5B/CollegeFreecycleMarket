@@ -194,3 +194,44 @@ Stage Summary:
 - ✅ Favicon design reflects the freecycling marketplace concept
 - ✅ Seed demo data button removed from front page
 - ✅ Cleaner, production-ready landing page
+
+---
+
+Task ID: 21
+Agent: Z.ai Code
+Task: Fix Next.js 16 params Promise error and OTP visibility issues
+
+Work Log:
+- Fixed params Promise error in item detail page (src/app/item/[id]/page.tsx):
+  - Updated params type from { id: string } to Promise<{ id: string }>
+  - Imported React.use() to unwrap the params Promise
+  - Changed params.id to resolvedParams.id in useEffect
+- Fixed params Promise error in chat page (src/app/chat/[itemId]/page.tsx):
+  - Updated params type from { itemId: string } to Promise<{ itemId: string }>
+  - Imported React.use() to unwrap the params Promise
+  - Changed params.itemId to resolvedParams.itemId in useEffect
+- Removed OTP visibility in development mode:
+  - Updated send-otp API route to remove development mode OTP return
+  - Removed conditional logic that showed OTP in response
+  - Updated SignupForm.tsx to remove OTP display in toast notification
+  - OTP now only sent via email in all environments
+- Created comprehensive EMAIL_SETUP_GUIDE.md with:
+  - Step-by-step Gmail app password setup
+  - Environment variable configuration
+  - Troubleshooting common issues
+  - Security best practices
+  - Alternative email provider options
+
+Stage Summary:
+- ✅ Next.js 16 params Promise errors resolved in both pages
+- ✅ OTP now only sent via email (not visible in UI)
+- ✅ Proper error messages for email configuration issues
+- ✅ Complete email setup guide provided
+- ✅ Security considerations documented
+
+Configuration Required:
+- Set EMAIL_USER in .env (Gmail address)
+- Set EMAIL_PASSWORD in .env (Gmail app password, not regular password)
+- Set EMAIL_FROM in .env (sender email display)
+- Enable 2-Step Verification on Gmail account
+- Generate App Password for email sending

@@ -83,18 +83,10 @@ export default function SignupForm() {
       setOtpSent(true);
       setCountdown(60); // 60 seconds countdown
 
-      // Show OTP in development mode
-      if (data.otp) {
-        toast({
-          title: 'OTP Sent (Development Mode)',
-          description: `Your OTP is: ${data.otp}`,
-        });
-      } else {
-        toast({
-          title: 'OTP Sent',
-          description: 'Please check your email for the verification code',
-        });
-      }
+      toast({
+        title: 'OTP Sent',
+        description: 'Please check your email for the verification code',
+      });
     } catch (error: any) {
       toast({
         variant: 'destructive',

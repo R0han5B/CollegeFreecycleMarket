@@ -81,21 +81,8 @@ export async function POST(request: NextRequest) {
     } catch (emailError: any) {
       console.error('Email sending error:', emailError);
 
-      // For development/demo purposes, return the OTP in the response
-      // Remove this in production!
-      if (process.env.NODE_ENV === 'development') {
-        return NextResponse.json(
-          {
-            success: true,
-            message: 'OTP sent successfully (Development Mode)',
-            otp: otp, // Only in development!
-          },
-          { status: 200 }
-        );
-      }
-
       return NextResponse.json(
-        { error: 'Failed to send OTP email. Please try again.' },
+        { error: 'Failed to send OTP email. Please check your email configuration or try again.' },
         { status: 500 }
       );
     }

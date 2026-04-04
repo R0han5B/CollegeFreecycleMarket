@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import Header from '@/components/layout/Header';
@@ -14,7 +14,8 @@ import Image from 'next/image';
 import { io, Socket } from 'socket.io-client';
 import type { Message, Item } from '@/types';
 
-export default function ChatPage({ params }: { params: { itemId: string } }) {
+export default function ChatPage({ params }: { params: Promise<{ itemId: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const { isAuthenticated, checkAuth, user, isLoading } = useAuthStore();
   const [item, setItem] = useState<Item | null>(null);
@@ -40,10 +41,10 @@ export default function ChatPage({ params }: { params: { itemId: string } }) {
       return;
     }
 
-    if (params.itemId) {
-      fetchItem(params.itemId);
+    if (resolvedParams.itemId) {
+      fetchItem(resolvedParams.itemId);
     }
-  }, [mounted, isLoading, isAuthenticated, params.itemId]);
+  }, [mounted, isLoading, isAuthenticated, resolvedParams.itemId]);
 
   useEffect(() => {
     if (!item || !user) return;

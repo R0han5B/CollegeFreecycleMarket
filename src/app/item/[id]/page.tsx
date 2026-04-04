@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import Header from '@/components/layout/Header';
@@ -27,7 +27,8 @@ import {
 import Image from 'next/image';
 import type { Item } from '@/types';
 
-export default function ItemDetailPage({ params }: { params: { id: string } }) {
+export default function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const router = useRouter();
   const { isAuthenticated, checkAuth, user, isLoading } = useAuthStore();
   const [item, setItem] = useState<Item | null>(null);
@@ -49,10 +50,10 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
       return;
     }
 
-    if (params.id) {
-      fetchItem(params.id);
+    if (resolvedParams.id) {
+      fetchItem(resolvedParams.id);
     }
-  }, [mounted, isLoading, isAuthenticated, params.id]);
+  }, [mounted, isLoading, isAuthenticated, resolvedParams.id]);
 
   const fetchItem = async (id: string) => {
     setLoading(true);
