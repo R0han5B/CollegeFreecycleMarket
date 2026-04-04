@@ -170,3 +170,27 @@ Configuration Required (for production):
 Development Mode:
 - OTP is displayed in a toast notification for easy testing
 - No email configuration required in development
+
+---
+
+Task ID: 20
+Agent: Z.ai Code
+Task: Update favicon and remove demo data from front page
+
+Work Log:
+- Created custom SVG favicon (public/favicon.svg):
+  - Features shopping bag with recycling arrows
+  - Orange color scheme matching the app theme
+  - Clean, minimalist design suitable for a marketplace
+  - 64x64 viewBox for favicon compatibility
+- Updated layout.tsx to use new favicon.svg
+- Removed "Seed Demo Data" button from home page (src/app/page.tsx):
+  - Removed seedDatabase function
+  - Removed the button from hero section
+  - Kept "Start Browsing" button only
+
+Stage Summary:
+- ✅ Custom favicon created and integrated
+- ✅ Favicon design reflects the freecycling marketplace concept
+- ✅ Seed demo data button removed from front page
+- ✅ Cleaner, production-ready landing page

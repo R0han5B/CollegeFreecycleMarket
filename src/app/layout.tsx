@@ -19,7 +19,9 @@ export const metadata: Metadata = {
   keywords: ["freecycling", "marketplace", "RKNEC", "college", "sustainable", "reuse"],
   authors: [{ name: "RKNEC Freecycling Team" }],
   icons: {
-    icon: "/logo.svg",
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
   },
   openGraph: {
     title: "College Freecycling Market",

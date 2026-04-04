@@ -28,20 +28,6 @@ export default function HomePage() {
     }
   }, [mounted, isLoading, isAuthenticated, redirected, router]);
 
-  const seedDatabase = async () => {
-    try {
-      const response = await fetch('/api/seed', { method: 'POST' });
-      const data = await response.json();
-      if (response.ok) {
-        alert('Database seeded successfully!\n\nDemo Accounts:\n' + data.users.join('\n') + '\nPassword: demo123');
-      } else {
-        alert(data.error || 'Failed to seed database');
-      }
-    } catch (error) {
-      alert('Failed to seed database');
-    }
-  };
-
   // Don't render anything while loading or if we've redirected
   if (!mounted || isLoading || redirected) {
     return (
@@ -71,9 +57,6 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-3">
               <Button size="lg" className="bg-orange-500 hover:bg-orange-600">
                 Start Browsing
-              </Button>
-              <Button size="lg" variant="outline" onClick={seedDatabase}>
-                Seed Demo Data
               </Button>
             </div>
           </div>
