@@ -49,41 +49,90 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
   useEffect(() => {
     if (!item || !user) return;
 
-    // Determine the other user
-    const otherUserId = item.sellerId === user.id ? null : item.sellerId;
-    if (!otherUserId) {
-      return;
+    // If user is the seller, we need to find the buyer from messages
+    if (item.sellerId === user.id) {
+      // Seller is viewing - fetch all messages for this item to find the buyer
+      fetch(`/api/messages/${itemId}?userId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.messages && data.messages.length > 0) {
+            // Find the first message where the sender is not the seller
+            const messageFromBuyer = data.messages.find((m: Message) => m.senderId !== user.id);
+            if (messageFromBuyer) {
+              const buyerId = messageFromBuyer.senderId;
+              setOtherUser({
+                id: buyerId,
+                name: messageFromBuyer.sender?.name || null,
+                email: messageFromBuyer.sender?.email || ''
+              });
+
+              // Filter messages to only show between seller and this buyer
+              const conversationMessages = data.messages.filter((m: Message) =>
+                (m.senderId === user.id && m.receiverId === buyerId) ||
+                (m.senderId === buyerId && m.receiverId === user.id)
+              );
+              setMessages(conversationMessages);
+
+              // Initialize Socket.io connection
+              const socketInstance = io('/?XTransformPort=3003', {
+                transports: ['websocket', 'polling']
+              });
+
+              socketInstance.on('connect', () => {
+                console.log('Connected to chat server');
+                socketInstance.emit('user:join', user.id);
+              });
+
+              socketInstance.on('message:receive', (newMessage: Message) => {
+                // Only add messages between these two users
+                if ((newMessage.senderId === user.id && newMessage.receiverId === buyerId) ||
+                    (newMessage.senderId === buyerId && newMessage.receiverId === user.id)) {
+                  setMessages((prev) => [...prev, newMessage]);
+                  scrollToBottom();
+                }
+              });
+
+              setSocket(socketInstance);
+
+              return () => {
+                socketInstance.disconnect();
+              };
+            }
+          }
+        });
+    } else {
+      // Buyer is viewing - other user is the seller
+      const sellerId = item.sellerId;
+      setOtherUser({
+        id: sellerId,
+        name: item.seller?.name || null,
+        email: item.seller?.email || ''
+      });
+
+      // Fetch messages between buyer and seller
+      fetchMessages(item.id, user.id, sellerId);
+
+      // Initialize Socket.io connection
+      const socketInstance = io('/?XTransformPort=3003', {
+        transports: ['websocket', 'polling']
+      });
+
+      socketInstance.on('connect', () => {
+        console.log('Connected to chat server');
+        socketInstance.emit('user:join', user.id);
+      });
+
+      socketInstance.on('message:receive', (newMessage: Message) => {
+        setMessages((prev) => [...prev, newMessage]);
+        scrollToBottom();
+      });
+
+      setSocket(socketInstance);
+
+      return () => {
+        socketInstance.disconnect();
+      };
     }
-
-    setOtherUser({
-      id: otherUserId,
-      name: item.seller?.name || null,
-      email: item.seller?.email || ''
-    });
-
-    // Fetch messages
-    fetchMessages(item.id, user.id, otherUserId);
-
-    // Initialize Socket.io connection
-    const socketInstance = io('/?XTransformPort=3003', {
-      transports: ['websocket', 'polling']
-    });
-
-    socketInstance.on('connect', () => {
-      console.log('Connected to chat server');
-      socketInstance.emit('user:join', user.id);
-    });
-
-    socketInstance.on('message:receive', (newMessage: Message) => {
-      setMessages((prev) => [...prev, newMessage]);
-      scrollToBottom();
-    });
-
-    setSocket(socketInstance);
-
-    return () => {
-      socketInstance.disconnect();
-    };
   }, [item, user]);
 
   const scrollToBottom = () => {
@@ -238,7 +287,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
               <div className="flex-1 min-w-0">
                 <h1 className="font-semibold text-lg truncate">{item.title}</h1>
                 <p className="text-sm text-muted-foreground">
-                  Chatting with {isSeller ? 'buyer' : (chatPartner?.name || chatPartner?.email?.split('@')[0] || 'seller')}
+                  Chatting with {otherUser?.name || otherUser?.email?.split('@')[0] || (isSeller ? 'buyer' : 'seller')}
                 </p>
               </div>
             </div>
@@ -269,7 +318,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
             {/* Input Area */}
             <ChatInput
               onSend={handleSendMessage}
-              disabled={!otherUser && !isSeller}
+              disabled={!otherUser}
             />
           </Card>
         </div>

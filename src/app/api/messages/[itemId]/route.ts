@@ -11,65 +11,111 @@ export async function GET(
     const userId = searchParams.get('userId');
     const otherUserId = searchParams.get('otherUserId');
 
-    if (!userId || !otherUserId) {
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Missing user IDs' },
+        { error: 'User ID is required' },
         { status: 400 }
       );
     }
 
-    // Get messages between current user and other user for this item
-    const messages = await db.message.findMany({
-      where: {
-        itemId,
-        OR: [
-          {
-            AND: [
-              { senderId: userId },
-              { receiverId: otherUserId }
-            ]
+    let messages;
+
+    // If otherUserId is provided, get messages between these two users
+    if (otherUserId) {
+      messages = await db.message.findMany({
+        where: {
+          itemId,
+          OR: [
+            {
+              AND: [
+                { senderId: userId },
+                { receiverId: otherUserId }
+              ]
+            },
+            {
+              AND: [
+                { senderId: otherUserId },
+                { receiverId: userId }
+              ]
+            }
+          ]
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
           },
-          {
-            AND: [
-              { senderId: otherUserId },
-              { receiverId: userId }
-            ]
-          }
-        ]
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            name: true,
-            email: true
+          receiver: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
           }
         },
-        receiver: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
+        orderBy: {
+          createdAt: 'asc'
         }
-      },
-      orderBy: {
-        createdAt: 'asc'
-      }
-    });
+      });
 
-    // Mark messages as read if they were sent to current user
-    await db.message.updateMany({
-      where: {
-        itemId,
-        senderId: otherUserId,
-        receiverId: userId,
-        read: false
-      },
-      data: {
-        read: true
-      }
-    });
+      // Mark messages as read if they were sent to current user
+      await db.message.updateMany({
+        where: {
+          itemId,
+          senderId: otherUserId,
+          receiverId: userId,
+          read: false
+        },
+        data: {
+          read: true
+        }
+      });
+    } else {
+      // If no otherUserId, get all messages for this item (for seller to find buyers)
+      messages = await db.message.findMany({
+        where: {
+          itemId,
+          OR: [
+            { senderId: userId },
+            { receiverId: userId }
+          ]
+        },
+        include: {
+          sender: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          },
+          receiver: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'asc'
+        }
+      });
+
+      // Mark all unread messages sent to current user as read
+      await db.message.updateMany({
+        where: {
+          itemId,
+          receiverId: userId,
+          read: false
+        },
+        data: {
+          read: true
+        }
+      });
+    }
 
     return NextResponse.json({ messages });
   } catch (error) {
