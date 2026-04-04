@@ -2,16 +2,20 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, LogOut, User, PlusSquare, LayoutDashboard, Menu, X } from 'lucide-react';
+import { ShoppingBag, LogOut, User, PlusSquare, LayoutDashboard, Menu, X, MessageSquare, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/auth-store';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 export default function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef<Socket | null>(null);
 
   const handleLogout = async () => {
     try {
@@ -22,6 +26,60 @@ export default function Header() {
       console.error('Logout error:', error);
     }
   };
+
+  // Fetch unread message count
+  const fetchUnreadCount = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(`/api/messages/unread-count?userId=${user.id}`);
+      const data = await response.json();
+      if (response.ok) {
+        setUnreadCount(data.count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
+
+  // Initialize Socket.io for real-time notifications
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) return;
+
+    // Connect to Socket.io server
+    const socket = io('/?XTransformPort=3003', {
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+      console.log('Connected to notification server');
+      socket.emit('user:join', user.id);
+    });
+
+    // Listen for new messages
+    socket.on('message:receive', (data: any) => {
+      // If the message is received by current user, increment unread count
+      if (data.receiverId === user.id) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    socketRef.current = socket;
+
+    // Initial fetch
+    fetchUnreadCount();
+
+    // Cleanup
+    return () => {
+      socket.disconnect();
+    };
+  }, [isAuthenticated, user?.id]);
+
+  // Refresh unread count when navigating
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUnreadCount();
+    }
+  }, [pathname, isAuthenticated]);
 
   if (pathname === '/') {
     return null;
@@ -70,6 +128,20 @@ export default function Header() {
                   My Items
                 </Button>
               </Link>
+              <Link href="/messages">
+                <Button
+                  variant={pathname === '/messages' ? 'default' : 'ghost'}
+                  className={pathname === '/messages' ? 'bg-orange-500 hover:bg-orange-600' : 'relative'}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <Badge className="ml-2 bg-red-500 hover:bg-red-600">
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
               <Link href="/profile">
                 <Button
                   variant={pathname === '/profile' ? 'default' : 'ghost'}
@@ -87,9 +159,6 @@ export default function Header() {
             <div className="hidden md:flex items-center space-x-2">
               <div className="text-sm text-gray-600 mr-2">
                 <span className="font-medium">{user?.name || user?.email}</span>
-                <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
-                  {user?.credits} credits
-                </span>
               </div>
               <Button
                 variant="outline"
@@ -145,6 +214,20 @@ export default function Header() {
                   My Items
                 </Button>
               </Link>
+              <Link href="/messages" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant={pathname === '/messages' ? 'default' : 'ghost'}
+                  className="w-full justify-start relative"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <Badge className="ml-2 bg-red-500 hover:bg-red-600">
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
               <Link href="/profile" onClick={() => setMobileMenuOpen(false)}>
                 <Button
                   variant={pathname === '/profile' ? 'default' : 'ghost'}
@@ -157,9 +240,6 @@ export default function Header() {
               <div className="pt-2 border-t border-gray-200">
                 <div className="text-sm text-gray-600 mb-2 px-2">
                   {user?.name || user?.email}
-                  <span className="ml-2 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs">
-                    {user?.credits} credits
-                  </span>
                 </div>
                 <Button
                   variant="outline"

@@ -24,18 +24,7 @@ async function main() {
   // Create demo password
   const demoPassword = await hashPassword('demo123');
 
-  // Create demo users
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@rknec.edu',
-      password: demoPassword,
-      name: 'Admin User',
-      phone: '9876543210',
-      isAdmin: true,
-      credits: 1000,
-    },
-  });
-
+  // Create demo users - only Priya and Rahul
   const user1 = await prisma.user.create({
     data: {
       email: 'rahul@rknec.edu',
@@ -55,17 +44,6 @@ async function main() {
       phone: '9876543212',
       isAdmin: false,
       credits: 150,
-    },
-  });
-
-  const user3 = await prisma.user.create({
-    data: {
-      email: 'amit@rknec.edu',
-      password: demoPassword,
-      name: 'Amit Kumar',
-      phone: '9876543213',
-      isAdmin: false,
-      credits: 80,
     },
   });
 
@@ -108,7 +86,7 @@ async function main() {
       {
         title: 'Wireless Bluetooth Headphones',
         description: 'Sony wireless headphones with noise cancellation. Used for 6 months, excellent condition.',
-        price: 50,
+        price: 2500,
         condition: 'Excellent',
         categoryId: categories[1].id,
         sellerId: user2.id,
@@ -121,27 +99,27 @@ async function main() {
         price: 0,
         condition: 'Good',
         categoryId: categories[2].id,
-        sellerId: user3.id,
+        sellerId: user1.id,
         image: null,
         isFeatured: false,
       },
       {
         title: 'Cricket Bat Complete Set',
         description: 'SS cricket bat with pads, gloves, and helmet. Used for one season.',
-        price: 30,
+        price: 1500,
         condition: 'Good',
         categoryId: categories[3].id,
-        sellerId: user1.id,
+        sellerId: user2.id,
         image: null,
         isFeatured: false,
       },
       {
         title: 'Digital Camera',
         description: 'Canon DSLR camera with 18-55mm lens. Great for photography enthusiasts.',
-        price: 80,
+        price: 15000,
         condition: 'Excellent',
         categoryId: categories[1].id,
-        sellerId: user2.id,
+        sellerId: user1.id,
         image: null,
         isFeatured: true,
       },
@@ -151,7 +129,7 @@ async function main() {
         price: 0,
         condition: 'Fair',
         categoryId: categories[0].id,
-        sellerId: user3.id,
+        sellerId: user2.id,
         image: null,
         isFeatured: false,
       },
@@ -161,10 +139,8 @@ async function main() {
   console.log('Database seeded successfully!');
   console.log('\nDemo Accounts:');
   console.log('================');
-  console.log('admin@rknec.edu / demo123 (Admin)');
   console.log('rahul@rknec.edu / demo123');
   console.log('priya@rknec.edu / demo123');
-  console.log('amit@rknec.edu / demo123');
 }
 
 main()

@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, Mail, Phone, Calendar, ShoppingBag, Coins } from 'lucide-react';
+import { User, Mail, Phone, Calendar, ShoppingBag } from 'lucide-react';
 import type { User as UserType } from '@/types';
 
 export default function ProfilePage() {
@@ -234,14 +234,7 @@ export default function ProfilePage() {
               <CardTitle>Account Statistics</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <div className="bg-gray-50 rounded-lg p-4 text-center">
-                  <Coins className="h-8 w-8 mx-auto mb-2 text-orange-500" />
-                  <p className="text-2xl font-bold text-gray-900">
-                    {profileData?.credits || 0}
-                  </p>
-                  <p className="text-sm text-gray-600">Credits</p>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-lg p-4 text-center">
                   <ShoppingBag className="h-8 w-8 mx-auto mb-2 text-orange-500" />
                   <p className="text-2xl font-bold text-gray-900">
@@ -249,12 +242,6 @@ export default function ProfilePage() {
                   </p>
                   <p className="text-sm text-gray-600">Items Posted</p>
                 </div>
-                {profileData?.isAdmin && (
-                  <div className="bg-orange-50 rounded-lg p-4 text-center">
-                    <Badge className="bg-orange-500">Admin</Badge>
-                    <p className="text-sm text-gray-600 mt-2">Administrator</p>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>

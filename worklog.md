@@ -277,3 +277,60 @@ Files Modified:
 - src/components/marketplace/ItemCard.tsx
 - src/app/item/[id]/page.tsx
 - src/app/post-item/page.tsx
+
+---
+
+Task ID: 23
+Agent: Z.ai Code
+Task: Add message notifications, remove credits, and remove admin accounts
+
+Work Log:
+- Created message notification system with Socket.io:
+  - Created /api/messages/unread-count API route to get unread message count
+  - Created /api/messages/conversations API route to get all user conversations
+  - Updated Header component to show Messages button with unread count badge
+  - Added Socket.io connection in Header to listen for new messages in real-time
+  - Unread count updates automatically when new messages are received
+  - Created /messages page to display all conversations with:
+    - Conversation list showing item, other user, and last message
+    - Unread message count for each conversation
+    - Timestamp and price display
+    - Click to open chat for that conversation
+- Removed admin accounts:
+  - Updated prisma/seed.ts to keep only rahul@rknec.edu and priya@rknec.edu
+  - Removed admin@rknec.edu and amit@rknec.edu accounts
+  - Updated item prices from credits to INR (e.g., 50 → 2500, 80 → 15000)
+  - Removed admin and amit's items, reassigned to rahul and priya
+- Removed admin login:
+  - Updated LoginForm.tsx to remove admin demo login button
+  - Now shows only rahul and priya demo accounts
+- Removed credits from UI:
+  - Updated Profile page to remove credits display from Account Statistics
+  - Removed Coins icon import from Profile page
+  - Removed admin badge display from Profile page
+  - Updated Header component to remove credits display from user info
+
+Stage Summary:
+- ✅ Real-time message notification system with Socket.io
+- ✅ Unread message count badge in header
+- ✅ Messages page to view all conversations
+- ✅ Auto-update unread count when new messages arrive
+- ✅ Only 2 demo accounts: rahul and priya
+- ✅ Admin login removed from everywhere
+- ✅ Credits removed from user profiles
+- ✅ Item prices updated to INR
+
+Demo Accounts (Only 2):
+- rahul@rknec.edu / demo123
+- priya@rknec.edu / demo123
+
+Files Created:
+- src/app/api/messages/unread-count/route.ts
+- src/app/api/messages/conversations/route.ts
+- src/app/messages/page.tsx
+
+Files Modified:
+- prisma/seed.ts
+- src/components/auth/LoginForm.tsx
+- src/app/profile/page.tsx
+- src/components/layout/Header.tsx

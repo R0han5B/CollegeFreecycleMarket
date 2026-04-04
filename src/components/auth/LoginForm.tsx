@@ -119,17 +119,6 @@ export default function LoginForm() {
             >
               <span className="font-mono text-xs mr-2">priya@rknec.edu / demo123</span>
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full justify-start text-sm"
-              onClick={() => {
-                setEmail('admin@rknec.edu');
-                setPassword('demo123');
-              }}
-            >
-              <span className="font-mono text-xs mr-2">admin@rknec.edu / demo123 (Admin)</span>
-            </Button>
           </div>
         </div>
 
