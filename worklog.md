@@ -115,3 +115,58 @@ Stage Summary:
 - ✅ "Contact Seller" button navigates to chat page
 - ✅ Chat page at /chat/[itemId] fully functional
 - ✅ Messages saved to database with image support
+
+---
+
+Task ID: 19
+Agent: Z.ai Code
+Task: Implement OTP verification for signup
+
+Work Log:
+- Installed nodemailer and @types/nodemailer packages
+- Created shared OTP store (src/lib/otpStore.ts):
+  - In-memory OTP storage with expiry tracking
+  - Helper functions for OTP generation, validation, and cleanup
+  - 5-minute default OTP expiry
+- Created send-otp API route (src/app/api/send-otp/route.ts):
+  - Validates @rknec.edu email domain
+  - Generates 6-digit OTP
+  - Sends OTP email via nodemailer (HTML and text formats)
+  - Prevents spam with 60-second cooldown
+  - Development mode: returns OTP in response for testing
+- Created verify-otp API route (src/app/api/verify-otp/route.ts):
+  - Validates OTP format and existence
+  - Checks OTP expiry
+  - Verifies OTP matches
+  - Cleans up verified OTP
+- Updated signup API route (src/app/api/auth/signup/route.ts):
+  - Now requires OTP parameter
+  - Validates OTP before creating user
+  - Checks OTP expiry
+  - Cleans up OTP after use
+- Updated SignupForm component:
+  - Added OTP input field
+  - Send OTP button with 60-second countdown
+  - Verify OTP button
+  - Email verification status indicator
+  - Disabled signup until email is verified
+  - Shows OTP in development mode for easy testing
+
+Stage Summary:
+- ✅ OTP verification system fully implemented
+- ✅ Email-based OTP sending with nodemailer
+- ✅ OTP validation and expiry handling
+- ✅ Resend OTP with cooldown timer
+- ✅ Enhanced signup UI with OTP flow
+- ✅ Development mode support (OTP shown in toast)
+- ✅ Clean separation of concerns (store, APIs, UI)
+- ✅ Error handling and user feedback
+
+Configuration Required (for production):
+- Set EMAIL_USER environment variable (Gmail address)
+- Set EMAIL_PASSWORD environment variable (Gmail app password)
+- Set EMAIL_FROM environment variable (sender email)
+
+Development Mode:
+- OTP is displayed in a toast notification for easy testing
+- No email configuration required in development

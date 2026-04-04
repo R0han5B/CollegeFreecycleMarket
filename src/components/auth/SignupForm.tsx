@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { Mail, CheckCircle, Clock } from 'lucide-react';
 
 export default function SignupForm() {
   const router = useRouter();
@@ -19,15 +20,143 @@ export default function SignupForm() {
     confirmPassword: '',
     name: '',
     phone: '',
+    otp: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingOTP, setIsSendingOTP] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  // Countdown timer for resend OTP
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (countdown > 0) {
+      interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [countdown]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
 
+  const validateEmail = (email: string) => {
+    return email.endsWith('@rknec.edu');
+  };
+
+  const sendOTP = async () => {
+    if (!formData.email) {
+      toast({
+        variant: 'destructive',
+        title: 'Email required',
+        description: 'Please enter your email address first',
+      });
+      return;
+    }
+
+    if (!validateEmail(formData.email)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid email',
+        description: 'Only @rknec.edu email addresses are allowed',
+      });
+      return;
+    }
+
+    setIsSendingOTP(true);
+    try {
+      const response = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
+      setOtpSent(true);
+      setCountdown(60); // 60 seconds countdown
+
+      // Show OTP in development mode
+      if (data.otp) {
+        toast({
+          title: 'OTP Sent (Development Mode)',
+          description: `Your OTP is: ${data.otp}`,
+        });
+      } else {
+        toast({
+          title: 'OTP Sent',
+          description: 'Please check your email for the verification code',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to send OTP',
+        description: error.message || 'Please try again',
+      });
+    } finally {
+      setIsSendingOTP(false);
+    }
+  };
+
+  const verifyOTP = async () => {
+    if (!formData.otp || formData.otp.length !== 6) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid OTP',
+        description: 'Please enter a valid 6-digit OTP',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          otp: formData.otp,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Invalid OTP');
+      }
+
+      setOtpVerified(true);
+      toast({
+        title: 'Email Verified',
+        description: 'Your email has been verified successfully',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Verification Failed',
+        description: error.message || 'Please check your OTP and try again',
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!otpVerified) {
+      toast({
+        variant: 'destructive',
+        title: 'Email not verified',
+        description: 'Please verify your email with OTP first',
+      });
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -57,6 +186,7 @@ export default function SignupForm() {
           password: formData.password,
           name: formData.name,
           phone: formData.phone,
+          otp: formData.otp,
         }),
       });
 
@@ -78,6 +208,9 @@ export default function SignupForm() {
         title: 'Signup failed',
         description: error.message || 'Please try again',
       });
+      // Reset OTP verification on error so user can try again
+      setOtpVerified(false);
+      setOtpSent(false);
     } finally {
       setIsLoading(false);
     }
@@ -95,15 +228,79 @@ export default function SignupForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">College Email (@rknec.edu)</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="your.email@rknec.edu"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
+            <div className="flex gap-2">
+              <Input
+                id="email"
+                type="email"
+                placeholder="your.email@rknec.edu"
+                value={formData.email}
+                onChange={handleChange}
+                disabled={otpVerified}
+                required
+              />
+              {!otpVerified && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={sendOTP}
+                  disabled={isSendingOTP || countdown > 0 || !formData.email}
+                  className="whitespace-nowrap"
+                >
+                  {isSendingOTP ? (
+                    'Sending...'
+                  ) : countdown > 0 ? (
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {countdown}s
+                    </span>
+                  ) : otpSent ? (
+                    'Resend'
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Mail className="h-4 w-4" />
+                      Send OTP
+                    </span>
+                  )}
+                </Button>
+              )}
+            </div>
+            {otpVerified && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>Email verified</span>
+              </div>
+            )}
           </div>
+
+          {otpSent && !otpVerified && (
+            <div className="space-y-2">
+              <Label htmlFor="otp">Enter OTP</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="otp"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="Enter 6-digit OTP"
+                  value={formData.otp}
+                  onChange={handleChange}
+                  maxLength={6}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={verifyOTP}
+                  disabled={!formData.otp || formData.otp.length !== 6}
+                >
+                  Verify
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                OTP sent to your email. Valid for 5 minutes.
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
             <Input
@@ -150,7 +347,7 @@ export default function SignupForm() {
           <Button
             type="submit"
             className="w-full bg-orange-500 hover:bg-orange-600"
-            disabled={isLoading}
+            disabled={isLoading || !otpVerified}
           >
             {isLoading ? 'Creating account...' : 'Sign Up'}
           </Button>
