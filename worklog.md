@@ -372,3 +372,23 @@ Stage Summary:
 
 ---
 
+Task ID: 25
+Agent: Z.ai Code
+Task: Fix missing Badge import in Messages page
+
+Work Log:
+- User reported errors when tapping on Messages from receiver's end
+- Identified missing import: Badge component was used on line 166 but not imported
+- Added Badge import to src/app/messages/page.tsx
+- Error resolved - Messages page now loads correctly
+
+Stage Summary:
+- ✅ Fixed missing Badge import in Messages page
+- ✅ Messages page now loads without errors for all users
+- ✅ Conversations display properly with unread count badges
+
+Files Modified:
+- src/app/messages/page.tsx
+
+---
+

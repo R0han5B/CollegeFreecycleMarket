@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth-store';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MessageSquare, ShoppingBag, User as UserIcon, Clock } from 'lucide-react';
 import Image from 'next/image';
