@@ -3,10 +3,10 @@ import { db } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
-    const itemId = params.itemId;
+    const { itemId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const userId = searchParams.get('userId');
     const otherUserId = searchParams.get('otherUserId');

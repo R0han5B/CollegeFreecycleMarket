@@ -211,7 +211,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
               <CardContent className="space-y-4">
                 <div className="flex items-baseline gap-3">
                   <span className="text-3xl font-bold text-orange-600">
-                    {item.price === 0 ? 'FREE' : `${item.price} credits`}
+                    {item.price === 0 ? 'FREE' : `₹${item.price.toLocaleString('en-IN')}`}
                   </span>
                   <Badge variant="secondary">{item.condition}</Badge>
                 </div>

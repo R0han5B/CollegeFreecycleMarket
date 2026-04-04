@@ -235,3 +235,45 @@ Configuration Required:
 - Set EMAIL_FROM in .env (sender email display)
 - Enable 2-Step Verification on Gmail account
 - Generate App Password for email sending
+
+---
+
+Task ID: 22
+Agent: Z.ai Code
+Task: Fix navigation issues and update pricing to INR
+
+Work Log:
+- Fixed Next.js 16 params Promise errors in API routes:
+  - Updated /api/items/[id]/route.ts:
+    - Changed params type to Promise<{ id: string }>
+    - Used await params to unwrap the Promise
+    - Applied to GET, DELETE, and PATCH methods
+  - Updated /api/messages/[itemId]/route.ts:
+    - Changed params type to Promise<{ itemId: string }>
+    - Used await params to unwrap the Promise
+  - This fixes the item navigation issue where clicking items wasn't working
+- Updated pricing system from credits to INR:
+  - ItemCard.tsx: Changed price display from "X credits" to "₹X" with Indian locale formatting
+  - Item detail page: Changed price display to use INR symbol
+  - Post-item form: Updated label from "Price (Credits, 0 for Free)" to "Price (₹ INR, 0 for Free)"
+  - Used toLocaleString('en-IN') for proper Indian number formatting (e.g., ₹1,00,000)
+- Verified message button functionality:
+  - Contact Seller button already exists in item detail page
+  - Navigates to /chat/[itemId] page
+  - Opens real-time chat between buyer and seller
+  - Supports text and image sharing in chat
+
+Stage Summary:
+- ✅ Item navigation from dashboard to detail page now works
+- ✅ All Next.js 16 params Promise issues resolved
+- ✅ Pricing updated from credits to INR across the app
+- ✅ Proper Indian number formatting for prices
+- ✅ Message/chat functionality confirmed working
+- ✅ Sellers can now set prices in INR
+
+Files Modified:
+- src/app/api/items/[id]/route.ts
+- src/app/api/messages/[itemId]/route.ts
+- src/components/marketplace/ItemCard.tsx
+- src/app/item/[id]/page.tsx
+- src/app/post-item/page.tsx

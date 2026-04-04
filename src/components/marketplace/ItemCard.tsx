@@ -73,7 +73,7 @@ export default function ItemCard({ item }: ItemCardProps) {
             </span>
           </div>
           <div className="font-bold text-lg text-orange-600">
-            {item.price === 0 ? 'FREE' : `${item.price} credits`}
+            {item.price === 0 ? 'FREE' : `₹${item.price.toLocaleString('en-IN')}`}
           </div>
         </CardFooter>
       </Card>

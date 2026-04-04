@@ -3,11 +3,12 @@ import { db } from '@/lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const item = await db.item.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         category: true,
         seller: {
@@ -49,11 +50,12 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     await db.item.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });
@@ -68,14 +70,15 @@ export async function DELETE(
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { isSold } = body;
 
     const item = await db.item.update({
-      where: { id: params.id },
+      where: { id },
       data: { isSold },
       include: {
         category: true,

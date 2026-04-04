@@ -277,7 +277,7 @@ export default function PostItemPage() {
 
                 {/* Price */}
                 <div className="space-y-2">
-                  <Label htmlFor="price">Price (Credits, 0 for Free)</Label>
+                  <Label htmlFor="price">Price (₹ INR, 0 for Free)</Label>
                   <Input
                     id="price"
                     type="number"
