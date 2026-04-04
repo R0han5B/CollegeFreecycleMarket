@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  name          String?
+  phone         String?
+  isAdmin       Boolean  @default(false)
+  credits       Int      @default(100)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items         Item[]
+  sentMessages  Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  sentRatings   Rating[] @relation("RatingsGiven")
+  receivedRatings Rating[] @relation("RatingsReceived")
+  paymentsAsBuyer Payment[] @relation("BuyerPayments")
+  paymentsAsSeller Payment[] @relation("SellerPayments")
+  watchlist     Watchlist[]
+  reports       Report[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items       Item[]
+}
+
+model Item {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Int
+  condition   String
+  image       String?
+  isFeatured  Boolean  @default(false)
+  isSold      Boolean  @default(false)
+  categoryId  String
+  sellerId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  seller      User     @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  messages    Message[]
+  ratings     Rating[]
+  watchlist   Watchlist[]
+  reports     Report[]
+  payments    Payment[]
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  content    String
+  senderId   String
+  receiverId String
+  itemId     String
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  item       Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  raterId   String
+  ratedId   String
+  itemId    String
+  createdAt DateTime @default(now())
+
+  rater     User     @relation("RatingsGiven", fields: [raterId], references: [id], onDelete: Cascade)
+  rated     User     @relation("RatingsReceived", fields: [ratedId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  amount    Int
+  buyerId   String
+  sellerId  String
+  itemId    String
+  status    String   @default("pending")
+  createdAt DateTime @default(now())
+
+  buyer     User     @relation("BuyerPayments", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller    User     @relation("SellerPayments", fields: [sellerId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
+
+model Watchlist {
+  id        String   @id @default(cuid())
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  reason    String
+  status    String   @default("pending")
+  userId    String
+  itemId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}
