@@ -71,10 +71,11 @@ model Item {
 
 model Message {
   id         String   @id @default(cuid())
-  content    String
+  content    String?
   senderId   String
   receiverId String
   itemId     String
+  imageUrl   String?
   read       Boolean  @default(false)
   createdAt  DateTime @default(now())
 

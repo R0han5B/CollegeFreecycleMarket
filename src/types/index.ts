@@ -34,10 +34,11 @@ export interface Item {
 
 export interface Message {
   id: string;
-  content: string;
+  content: string | null;
   senderId: string;
   receiverId: string;
   itemId: string;
+  imageUrl: string | null;
   read: boolean;
   createdAt: Date;
   sender?: User;

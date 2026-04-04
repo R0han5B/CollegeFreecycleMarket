@@ -269,7 +269,7 @@ export default function ItemDetailPage({ params }: { params: { id: string } }) {
                   <Button
                     className="flex-1 bg-orange-500 hover:bg-orange-600"
                     size="lg"
-                    onClick={() => alert('Chat feature coming soon!')}
+                    onClick={() => router.push(`/chat/${item.id}`)}
                   >
                     <MessageCircle className="h-5 w-5 mr-2" />
                     Contact Seller
