@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
 
     // Verify OTP
     if (otpStore[email].otp === otpNumber) {
-      // OTP is correct, delete it
-      delete otpStore[email];
+      // Keep the OTP until signup completes, but mark it verified.
+      otpStore[email].verified = true;
       return NextResponse.json(
         { success: true, message: 'OTP verified successfully' },
         { status: 200 }

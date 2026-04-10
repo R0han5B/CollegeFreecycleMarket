@@ -4,6 +4,7 @@
 interface OTPData {
   otp: number;
   expiresAt: number;
+  verified: boolean;
 }
 
 export const otpStore: Record<string, OTPData> = {};
@@ -31,6 +32,7 @@ export function generateOTP(): number {
 export function setOTP(email: string, otp: number, expiryMinutes: number = 5): void {
   otpStore[email] = {
     otp,
-    expiresAt: Date.now() + expiryMinutes * 60 * 1000
+    expiresAt: Date.now() + expiryMinutes * 60 * 1000,
+    verified: false,
   };
 }

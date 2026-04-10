@@ -50,6 +50,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!otpStore[email].verified) {
+      return NextResponse.json(
+        { error: 'Please verify your OTP before signing up.' },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
     const existingUser = await db.user.findUnique({
       where: { email },

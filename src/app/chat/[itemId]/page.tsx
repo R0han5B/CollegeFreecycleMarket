@@ -52,7 +52,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
     // If user is the seller, we need to find the buyer from messages
     if (item.sellerId === user.id) {
       // Seller is viewing - fetch all messages for this item to find the buyer
-      fetch(`/api/messages/${itemId}?userId=${user.id}`)
+      fetch(`/api/messages/${item.id}?userId=${user.id}`)
         .then(res => res.json())
         .then(data => {
           if (data.messages && data.messages.length > 0) {

@@ -4,8 +4,8 @@ import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from '@/components/ui/dialog';
-import Image from 'next/image';
 
 interface ImageModalProps {
   isOpen: boolean;
@@ -22,21 +22,24 @@ export default function ImageModal({
 }: ImageModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl w-full p-0">
+      <DialogContent
+        className="w-fit max-w-[95vw] border-none bg-transparent p-0 shadow-none"
+        showCloseButton={false}
+      >
+        <DialogTitle className="sr-only">{alt}</DialogTitle>
         <button
+          type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+          className="absolute top-3 right-3 z-10 rounded-full bg-black/60 p-2 text-white transition-colors hover:bg-black/80"
         >
           <X className="h-5 w-5" />
         </button>
         {imageUrl && (
-          <div className="relative w-full aspect-video bg-black">
-            <Image
+          <div className="inline-flex items-center justify-center overflow-hidden rounded-lg bg-black">
+            <img
               src={imageUrl}
               alt={alt}
-              fill
-              className="object-contain"
-              priority
+              className="block h-auto max-h-[85vh] w-auto max-w-[95vw] object-contain"
             />
           </div>
         )}

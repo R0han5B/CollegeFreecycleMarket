@@ -54,9 +54,38 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await db.item.delete({
+    const existingItem = await db.item.findUnique({
       where: { id },
+      select: { id: true },
     });
+
+    if (!existingItem) {
+      return NextResponse.json(
+        { error: 'Item not found' },
+        { status: 404 }
+      );
+    }
+
+    await db.$transaction([
+      db.message.deleteMany({
+        where: { itemId: id },
+      }),
+      db.rating.deleteMany({
+        where: { itemId: id },
+      }),
+      db.watchlist.deleteMany({
+        where: { itemId: id },
+      }),
+      db.report.deleteMany({
+        where: { itemId: id },
+      }),
+      db.payment.deleteMany({
+        where: { itemId: id },
+      }),
+      db.item.delete({
+        where: { id },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {
