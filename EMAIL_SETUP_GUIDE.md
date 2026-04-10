@@ -48,6 +48,8 @@ After adding the environment variables, restart your dev server:
 bun run dev
 ```
 
+This project's `dev` script uses webpack mode for Next.js to avoid a Turbopack crash in the current local Windows setup.
+
 ## Step 5: Test OTP Sending
 
 1. Go to your signup page

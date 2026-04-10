@@ -118,6 +118,8 @@ bun run dev
 npm run dev
 ```
 
+The dev script is pinned to `next dev --webpack` because the current Windows/Bun setup is triggering repeated Turbopack panics.
+
 App runs at:
 👉 http://localhost:3000
 

@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { otpStore, isOTPExpired, cleanupExpiredOTP } from '@/lib/otpStore';
+import { isOTPExpired, cleanupExpiredOTP, getOTPData, normalizeEmail } from '@/lib/otpStore';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, otp } = body;
+    const normalizedEmail = normalizeEmail(email || '');
 
     // Validate inputs
-    if (!email || !otp) {
+    if (!normalizedEmail || !otp) {
       return NextResponse.json(
         { error: 'Email and OTP are required' },
         { status: 400 }
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if OTP exists and is valid
-    if (!otpStore[email]) {
+    const otpData = getOTPData(normalizedEmail);
+    if (!otpData) {
       return NextResponse.json(
         { error: 'No OTP found for this email. Please request a new OTP.' },
         { status: 400 }
@@ -33,8 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if OTP is expired
-    if (isOTPExpired(email)) {
-      cleanupExpiredOTP(email);
+    if (isOTPExpired(normalizedEmail)) {
+      cleanupExpiredOTP(normalizedEmail);
       return NextResponse.json(
         { error: 'OTP has expired. Please request a new OTP.' },
         { status: 400 }
@@ -42,9 +44,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify OTP
-    if (otpStore[email].otp === otpNumber) {
+    if (otpData.otp === otpNumber) {
       // Keep the OTP until signup completes, but mark it verified.
-      otpStore[email].verified = true;
+      otpData.verified = true;
       return NextResponse.json(
         { success: true, message: 'OTP verified successfully' },
         { status: 200 }

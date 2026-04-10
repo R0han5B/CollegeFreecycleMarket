@@ -9,13 +9,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { User, Mail, Phone, Calendar, ShoppingBag } from 'lucide-react';
+import { User, Mail, Phone, Calendar, ShoppingBag, Trash2 } from 'lucide-react';
 import type { User as UserType } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { isAuthenticated, user, setUser, isLoading } = useAuthStore();
+  const { isAuthenticated, user, setUser, logout, isLoading } = useAuthStore();
+  const { toast } = useToast();
   const [profileData, setProfileData] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -24,6 +25,7 @@ export default function ProfilePage() {
     phone: '',
   });
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -88,6 +90,46 @@ export default function ProfilePage() {
       alert(error.message || 'Failed to update profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user?.id) return;
+
+    const confirmed = window.confirm(
+      'Delete your account permanently? This will remove your profile, items, messages, payments, ratings, watchlist, and reports.'
+    );
+
+    if (!confirmed) return;
+
+    setDeleting(true);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete account');
+      }
+
+      logout();
+      toast({
+        title: 'Account deleted',
+        description: 'Your account and related data have been removed.',
+      });
+      router.replace('/');
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Delete failed',
+        description: error.message || 'Failed to delete account',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -259,6 +301,15 @@ export default function ProfilePage() {
               >
                 <ShoppingBag className="h-4 w-4 mr-2" />
                 View My Items
+              </Button>
+              <Button
+                variant="destructive"
+                className="w-full justify-start"
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {deleting ? 'Deleting Account...' : 'Delete Account'}
               </Button>
             </CardContent>
           </Card>

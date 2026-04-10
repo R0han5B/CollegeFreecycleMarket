@@ -7,11 +7,31 @@ interface OTPData {
   verified: boolean;
 }
 
-export const otpStore: Record<string, OTPData> = {};
+declare global {
+  var __otpStore: Record<string, OTPData> | undefined;
+}
+
+export const otpStore: Record<string, OTPData> = globalThis.__otpStore ?? {};
+
+if (!globalThis.__otpStore) {
+  globalThis.__otpStore = otpStore;
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+export function getOTPData(email: string): OTPData | undefined {
+  return otpStore[normalizeEmail(email)];
+}
+
+export function deleteOTP(email: string): void {
+  delete otpStore[normalizeEmail(email)];
+}
 
 // Helper to check if OTP is expired
 export function isOTPExpired(email: string): boolean {
-  const data = otpStore[email];
+  const data = getOTPData(email);
   if (!data) return true;
   return Date.now() > data.expiresAt;
 }
@@ -19,7 +39,7 @@ export function isOTPExpired(email: string): boolean {
 // Helper to clean up expired OTPs
 export function cleanupExpiredOTP(email: string): void {
   if (isOTPExpired(email)) {
-    delete otpStore[email];
+    deleteOTP(email);
   }
 }
 
@@ -30,7 +50,7 @@ export function generateOTP(): number {
 
 // Helper to set OTP with 5 minute expiry
 export function setOTP(email: string, otp: number, expiryMinutes: number = 5): void {
-  otpStore[email] = {
+  otpStore[normalizeEmail(email)] = {
     otp,
     expiresAt: Date.now() + expiryMinutes * 60 * 1000,
     verified: false,

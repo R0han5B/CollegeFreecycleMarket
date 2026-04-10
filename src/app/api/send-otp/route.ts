@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
-import { otpStore, generateOTP, setOTP, isOTPExpired, cleanupExpiredOTP } from '@/lib/otpStore';
+import { generateOTP, setOTP, isOTPExpired, cleanupExpiredOTP, getOTPData, normalizeEmail } from '@/lib/otpStore';
 import { validateCollegeEmail } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email } = body;
+    const normalizedEmail = normalizeEmail(email || '');
 
     // Validate email
-    if (!email) {
+    if (!normalizedEmail) {
       return NextResponse.json(
         { error: 'Email is required' },
         { status: 400 }
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate college email domain
-    if (!validateCollegeEmail(email)) {
+    if (!validateCollegeEmail(normalizedEmail)) {
       return NextResponse.json(
         { error: 'Only @rknec.edu email addresses are allowed' },
         { status: 400 }
@@ -25,11 +26,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Clean up expired OTP if exists
-    cleanupExpiredOTP(email);
+    cleanupExpiredOTP(normalizedEmail);
 
     // Check if there's a recent OTP (prevent spam, wait 1 minute)
-    if (otpStore[email] && !isOTPExpired(email)) {
-      const timeLeft = Math.ceil((otpStore[email].expiresAt - Date.now()) / 1000);
+    const existingOtp = getOTPData(normalizedEmail);
+    if (existingOtp && !isOTPExpired(normalizedEmail)) {
+      const timeLeft = Math.ceil((existingOtp.expiresAt - Date.now()) / 1000);
       return NextResponse.json(
         { error: `Please wait before requesting another OTP. Expires in ${timeLeft} seconds.` },
         { status: 429 }
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     // Generate new OTP
     const otp = generateOTP();
-    setOTP(email, otp, 5); // 5 minutes expiry
+    setOTP(normalizedEmail, otp, 5); // 5 minutes expiry
 
     // Create transporter (using environment variables)
     const transporter = nodemailer.createTransport({
@@ -53,7 +55,7 @@ export async function POST(request: NextRequest) {
     try {
       await transporter.sendMail({
         from: process.env.EMAIL_FROM || 'College Freecycling Market <noreply@rknec.edu>',
-        to: email,
+        to: normalizedEmail,
         subject: 'Verify Your Email - College Freecycling Market',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

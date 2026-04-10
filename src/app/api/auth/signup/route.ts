@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hashPassword, validateCollegeEmail } from '@/lib/auth';
-import { otpStore, isOTPExpired, cleanupExpiredOTP } from '@/lib/otpStore';
+import { isOTPExpired, cleanupExpiredOTP, getOTPData, deleteOTP, normalizeEmail } from '@/lib/otpStore';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { email, password, name, phone, otp } = body;
+    const normalizedEmail = normalizeEmail(email || '');
 
     // Validate required fields
-    if (!email || !password || !otp) {
+    if (!normalizedEmail || !password || !otp) {
       return NextResponse.json(
         { error: 'Email, password, and OTP are required' },
         { status: 400 }
@@ -17,7 +18,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate email domain
-    if (!validateCollegeEmail(email)) {
+    if (!validateCollegeEmail(normalizedEmail)) {
       return NextResponse.json(
         { error: 'Only @rknec.edu email addresses are allowed' },
         { status: 400 }
@@ -25,7 +26,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify OTP
-    if (!otpStore[email]) {
+    const otpData = getOTPData(normalizedEmail);
+    if (!otpData) {
       return NextResponse.json(
         { error: 'No OTP found. Please request an OTP first.' },
         { status: 400 }
@@ -33,8 +35,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if OTP is expired
-    if (isOTPExpired(email)) {
-      cleanupExpiredOTP(email);
+    if (isOTPExpired(normalizedEmail)) {
+      cleanupExpiredOTP(normalizedEmail);
       return NextResponse.json(
         { error: 'OTP has expired. Please request a new OTP.' },
         { status: 400 }
@@ -43,14 +45,14 @@ export async function POST(request: NextRequest) {
 
     // Convert OTP to number and verify
     const otpNumber = typeof otp === 'string' ? parseInt(otp, 10) : otp;
-    if (otpStore[email].otp !== otpNumber) {
+    if (otpData.otp !== otpNumber) {
       return NextResponse.json(
         { error: 'Invalid OTP. Please try again.' },
         { status: 400 }
       );
     }
 
-    if (!otpStore[email].verified) {
+    if (!otpData.verified) {
       return NextResponse.json(
         { error: 'Please verify your OTP before signing up.' },
         { status: 400 }
@@ -59,12 +61,12 @@ export async function POST(request: NextRequest) {
 
     // Check if user already exists
     const existingUser = await db.user.findUnique({
-      where: { email },
+      where: { email: normalizedEmail },
     });
 
     if (existingUser) {
       // Clean up the verified OTP since user already exists
-      delete otpStore[email];
+      deleteOTP(normalizedEmail);
       return NextResponse.json(
         { error: 'Email already registered' },
         { status: 400 }
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
     // Create user
     const user = await db.user.create({
       data: {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         name,
         phone,
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Clean up the verified OTP
-    delete otpStore[email];
+    deleteOTP(normalizedEmail);
 
     return NextResponse.json({ user }, { status: 201 });
   } catch (error) {

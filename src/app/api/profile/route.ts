@@ -82,3 +82,112 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId } = body;
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const user = await db.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const userItems = await db.item.findMany({
+      where: { sellerId: userId },
+      select: { id: true },
+    });
+
+    const itemIds = userItems.map((item) => item.id);
+
+    if (itemIds.length > 0) {
+      await db.message.deleteMany({
+        where: { itemId: { in: itemIds } },
+      });
+
+      await db.rating.deleteMany({
+        where: { itemId: { in: itemIds } },
+      });
+
+      await db.payment.deleteMany({
+        where: { itemId: { in: itemIds } },
+      });
+
+      await db.watchlist.deleteMany({
+        where: { itemId: { in: itemIds } },
+      });
+
+      await db.report.deleteMany({
+        where: { itemId: { in: itemIds } },
+      });
+
+      await db.item.deleteMany({
+        where: { id: { in: itemIds } },
+      });
+    }
+
+    await db.message.deleteMany({
+      where: {
+        OR: [
+          { senderId: userId },
+          { receiverId: userId },
+        ],
+      },
+    });
+
+    await db.rating.deleteMany({
+      where: {
+        OR: [
+          { raterId: userId },
+          { ratedId: userId },
+        ],
+      },
+    });
+
+    await db.payment.deleteMany({
+      where: {
+        OR: [
+          { buyerId: userId },
+          { sellerId: userId },
+        ],
+      },
+    });
+
+    await db.watchlist.deleteMany({
+      where: { userId },
+    });
+
+    await db.report.deleteMany({
+      where: { userId },
+    });
+
+    await db.user.delete({
+      where: { id: userId },
+    });
+
+    return NextResponse.json(
+      { success: true, message: 'Account deleted successfully' },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error('Delete profile error:', error);
+    return NextResponse.json(
+      { error: 'Failed to delete account' },
+      { status: 500 }
+    );
+  }
+}
