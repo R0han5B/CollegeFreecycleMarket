@@ -15,12 +15,12 @@ export default function Footer() {
           </div>
 
           <div className="text-sm text-gray-600 text-center">
-            <p>© 2024 College Freecycling Market. All rights reserved.</p>
+            <p>© 2026 College Freecycling Market. All rights reserved.</p>
             <p className="mt-1">A sustainable marketplace for RKNEC students</p>
           </div>
 
           <div className="text-sm text-gray-500">
-            Made with ❤️ for campus sustainability
+            Made for campus sustainability
           </div>
         </div>
       </div>

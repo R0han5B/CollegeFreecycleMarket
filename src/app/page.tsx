@@ -146,8 +146,8 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-gray-100 border-t border-gray-200 py-8">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© 2024 College Freecycling Market. All rights reserved.</p>
-          <p className="mt-2">A sustainable marketplace for RKNEC students</p>
+          <p>© 2026 College Freecycling Market. All rights reserved.</p>
+          <p className="mt-2">A sustainable marketplace for students</p>
         </div>
       </footer>
     </div>
