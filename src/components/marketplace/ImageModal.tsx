@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { X } from 'lucide-react';
+import { sanitizeImageUrl } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ export default function ImageModal({
   alt,
 }: ImageModalProps) {
   const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const safeImageUrl = sanitizeImageUrl(imageUrl);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -37,13 +39,13 @@ export default function ImageModal({
         >
           <X className="h-5 w-5" />
         </button>
-        {imageUrl && failedImageUrl !== imageUrl ? (
+        {safeImageUrl && failedImageUrl !== safeImageUrl ? (
           <div className="inline-flex items-center justify-center overflow-hidden rounded-lg bg-black">
             <img
-              src={imageUrl}
+              src={safeImageUrl}
               alt={alt}
               className="block h-auto max-h-[85vh] w-auto max-w-[95vw] object-contain"
-              onError={() => setFailedImageUrl(imageUrl)}
+              onError={() => setFailedImageUrl(safeImageUrl)}
             />
           </div>
         ) : (
