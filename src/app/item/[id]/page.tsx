@@ -23,6 +23,7 @@ import {
   Package,
   Tag,
   MessageCircle,
+  ShoppingCart,
 } from 'lucide-react';
 import Image from 'next/image';
 import type { Item } from '@/types';
@@ -35,6 +36,8 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [savedToCart, setSavedToCart] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -52,6 +55,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
 
     if (resolvedParams.id) {
       fetchItem(resolvedParams.id);
+      checkCartStatus(resolvedParams.id);
     }
   }, [mounted, isLoading, isAuthenticated, resolvedParams.id]);
 
@@ -105,6 +109,56 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
       }
     } catch (error) {
       console.error('Failed to delete item:', error);
+    }
+  };
+
+  const checkCartStatus = async (itemId: string) => {
+    if (!user?.id) return;
+
+    try {
+      const response = await fetch(`/api/watchlist/${itemId}?userId=${user.id}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setSavedToCart(data.saved);
+      }
+    } catch (error) {
+      console.error('Failed to check cart status:', error);
+    }
+  };
+
+  const handleCartToggle = async () => {
+    if (!item || !user?.id) return;
+
+    setCartLoading(true);
+    try {
+      const response = await fetch(
+        savedToCart
+          ? `/api/watchlist/${item.id}?userId=${user.id}`
+          : '/api/watchlist',
+        {
+          method: savedToCart ? 'DELETE' : 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: savedToCart
+            ? undefined
+            : JSON.stringify({
+                userId: user.id,
+                itemId: item.id,
+              }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSavedToCart(data.saved);
+      }
+    } catch (error) {
+      console.error('Failed to update cart:', error);
+    } finally {
+      setCartLoading(false);
     }
   };
 
@@ -278,9 +332,15 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => alert('Watchlist feature coming soon!')}
+                    onClick={handleCartToggle}
+                    disabled={cartLoading}
                   >
-                    Save
+                    <ShoppingCart className="h-5 w-5 mr-2" />
+                    {cartLoading
+                      ? 'Updating...'
+                      : savedToCart
+                        ? 'Remove from Cart'
+                        : 'Save to Cart'}
                   </Button>
                 </>
               )}

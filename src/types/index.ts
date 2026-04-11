@@ -69,6 +69,7 @@ export interface Watchlist {
   id: string;
   userId: string;
   itemId: string;
+  createdAt: Date;
   item?: Item;
 }
 

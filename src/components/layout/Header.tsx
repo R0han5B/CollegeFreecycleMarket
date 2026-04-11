@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, LogOut, User, PlusSquare, LayoutDashboard, Menu, X, MessageSquare, Bell } from 'lucide-react';
+import { ShoppingBag, LogOut, User, PlusSquare, LayoutDashboard, Menu, X, MessageSquare, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/auth-store';
@@ -15,6 +15,7 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
 
   const handleLogout = async () => {
@@ -38,6 +39,19 @@ export default function Header() {
       }
     } catch (error) {
       console.error('Failed to fetch unread count:', error);
+    }
+  };
+
+  const fetchCartCount = async () => {
+    if (!user?.id) return;
+    try {
+      const response = await fetch(`/api/watchlist?userId=${user.id}`);
+      const data = await response.json();
+      if (response.ok) {
+        setCartCount(data.count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch cart count:', error);
     }
   };
 
@@ -65,11 +79,14 @@ export default function Header() {
 
     socketRef.current = socket;
 
-    // Initial fetch
-    fetchUnreadCount();
+    const initialFetchTimeout = window.setTimeout(() => {
+      void fetchUnreadCount();
+      void fetchCartCount();
+    }, 0);
 
     // Cleanup
     return () => {
+      window.clearTimeout(initialFetchTimeout);
       socket.disconnect();
     };
   }, [isAuthenticated, user?.id]);
@@ -77,7 +94,12 @@ export default function Header() {
   // Refresh unread count when navigating
   useEffect(() => {
     if (isAuthenticated) {
-      fetchUnreadCount();
+      const refreshTimeout = window.setTimeout(() => {
+        void fetchUnreadCount();
+        void fetchCartCount();
+      }, 0);
+
+      return () => window.clearTimeout(refreshTimeout);
     }
   }, [pathname, isAuthenticated]);
 
@@ -138,6 +160,20 @@ export default function Header() {
                   {unreadCount > 0 && (
                     <Badge className="ml-2 bg-red-500 hover:bg-red-600">
                       {unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+              <Link href="/cart">
+                <Button
+                  variant={pathname === '/cart' ? 'default' : 'ghost'}
+                  className={pathname === '/cart' ? 'bg-orange-500 hover:bg-orange-600' : 'relative'}
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Cart
+                  {cartCount > 0 && (
+                    <Badge className="ml-2 bg-orange-500 hover:bg-orange-600">
+                      {cartCount}
                     </Badge>
                   )}
                 </Button>
@@ -224,6 +260,20 @@ export default function Header() {
                   {unreadCount > 0 && (
                     <Badge className="ml-2 bg-red-500 hover:bg-red-600">
                       {unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </Link>
+              <Link href="/cart" onClick={() => setMobileMenuOpen(false)}>
+                <Button
+                  variant={pathname === '/cart' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                >
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Cart
+                  {cartCount > 0 && (
+                    <Badge className="ml-2 bg-orange-500 hover:bg-orange-600">
+                      {cartCount}
                     </Badge>
                   )}
                 </Button>
