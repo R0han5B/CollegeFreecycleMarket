@@ -16,7 +16,7 @@ export default function Footer() {
 
           <div className="text-sm text-gray-600 text-center">
             <p>© 2026 College Freecycling Market. All rights reserved.</p>
-            <p className="mt-1">A sustainable marketplace for RKNEC students</p>
+            <p className="mt-1">A sustainable marketplace for students</p>
           </div>
 
           <div className="text-sm text-gray-500">
