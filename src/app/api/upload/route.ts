@@ -1,7 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mkdir, writeFile } from 'fs/promises';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+
+function getCloudinaryConfig() {
+  const cloudinaryUrl = process.env.CLOUDINARY_URL;
+
+  if (!cloudinaryUrl) {
+    throw new Error('CLOUDINARY_URL is not configured');
+  }
+
+  const parsedUrl = new URL(cloudinaryUrl);
+  const cloudName = parsedUrl.hostname;
+  const apiKey = decodeURIComponent(parsedUrl.username);
+  const apiSecret = decodeURIComponent(parsedUrl.password);
+
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('CLOUDINARY_URL is invalid');
+  }
+
+  return { cloudName, apiKey, apiSecret };
+}
+
+async function uploadToCloudinary(file: File, buffer: Buffer, publicId: string) {
+  const { cloudName, apiKey, apiSecret } = getCloudinaryConfig();
+  const timestamp = Math.floor(Date.now() / 1000);
+  const folder = 'college-freecycle/item-uploads';
+
+  const encoder = new TextEncoder();
+  const dataToSign = `folder=${folder}&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+  const signatureBuffer = await crypto.subtle.digest('SHA-1', encoder.encode(dataToSign));
+  const signature = Array.from(new Uint8Array(signatureBuffer))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+
+  const cloudinaryFormData = new FormData();
+  cloudinaryFormData.append('file', new Blob([buffer], { type: file.type }), publicId);
+  cloudinaryFormData.append('api_key', apiKey);
+  cloudinaryFormData.append('timestamp', String(timestamp));
+  cloudinaryFormData.append('folder', folder);
+  cloudinaryFormData.append('public_id', publicId);
+  cloudinaryFormData.append('signature', signature);
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: cloudinaryFormData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Cloudinary upload failed: ${errorText}`);
+  }
+
+  const data = await response.json();
+  return data.secure_url as string;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,19 +85,11 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Generate unique filename
-    const ext = path.extname(file.name);
-    const filename = `${uuidv4()}${ext}`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    const filepath = path.join(uploadDir, filename);
-
-    // Ensure the upload directory exists before writing the file.
-    await mkdir(uploadDir, { recursive: true });
-
-    // Write file
-    await writeFile(filepath, buffer);
-
-    const imageUrl = `/uploads/${filename}`;
+    const fileExtension = file.name.includes('.')
+      ? file.name.split('.').pop()
+      : file.type.split('/')[1];
+    const publicId = `${uuidv4()}${fileExtension ? `.${fileExtension}` : ''}`;
+    const imageUrl = await uploadToCloudinary(file, buffer, publicId);
 
     return NextResponse.json({ imageUrl });
   } catch (error) {
