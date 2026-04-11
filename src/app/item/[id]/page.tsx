@@ -25,7 +25,7 @@ import {
   MessageCircle,
   ShoppingCart,
 } from 'lucide-react';
-import Image from 'next/image';
+import { ImageFallback } from '@/components/ui/ImageFallback';
 import type { Item } from '@/types';
 
 export default function ItemDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -224,21 +224,20 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
           <div>
             <Card className="overflow-hidden">
               <div className="relative aspect-square bg-gray-100 cursor-pointer" onClick={() => item.image && setImageModalOpen(true)}>
-                {item.image ? (
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    fill
-                    className="object-cover"
-                    priority
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                    <span className="text-6xl font-bold text-gray-300">
-                      {item.title.charAt(0)}
-                    </span>
-                  </div>
-                )}
+                <ImageFallback
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  fallback={
+                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                      <span className="text-6xl font-bold text-gray-300">
+                        {item.title.charAt(0)}
+                      </span>
+                    </div>
+                  }
+                />
                 {item.isSold && (
                   <Badge className="absolute top-4 left-4 bg-red-500 text-lg px-4 py-2">
                     SOLD

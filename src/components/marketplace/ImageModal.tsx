@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { X } from 'lucide-react';
 import {
   Dialog,
@@ -20,6 +21,8 @@ export default function ImageModal({
   imageUrl,
   alt,
 }: ImageModalProps) {
+  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
@@ -34,13 +37,18 @@ export default function ImageModal({
         >
           <X className="h-5 w-5" />
         </button>
-        {imageUrl && (
+        {imageUrl && failedImageUrl !== imageUrl ? (
           <div className="inline-flex items-center justify-center overflow-hidden rounded-lg bg-black">
             <img
               src={imageUrl}
               alt={alt}
               className="block h-auto max-h-[85vh] w-auto max-w-[95vw] object-contain"
+              onError={() => setFailedImageUrl(imageUrl)}
             />
+          </div>
+        ) : (
+          <div className="rounded-lg bg-black px-8 py-10 text-center text-sm text-white/80">
+            Image is no longer available.
           </div>
         )}
       </DialogContent>

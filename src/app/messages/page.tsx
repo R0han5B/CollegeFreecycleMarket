@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { MessageSquare, ShoppingBag, User as UserIcon, Clock } from 'lucide-react';
-import Image from 'next/image';
 import { formatDistanceToNow } from 'date-fns';
+import { ImageFallback } from '@/components/ui/ImageFallback';
 
 interface Conversation {
   otherUserId: string;
@@ -137,18 +137,17 @@ export default function MessagesPage() {
                     <div className="flex items-center gap-4">
                       {/* Item Image */}
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                        {conversation.item.image ? (
-                          <Image
-                            src={conversation.item.image}
-                            alt={conversation.item.title}
-                            fill
-                            className="object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <ShoppingBag className="h-6 w-6 text-gray-400" />
-                          </div>
-                        )}
+                        <ImageFallback
+                          src={conversation.item.image}
+                          alt={conversation.item.title}
+                          fill
+                          className="object-cover"
+                          fallback={
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ShoppingBag className="h-6 w-6 text-gray-400" />
+                            </div>
+                          }
+                        />
                       </div>
 
                       {/* Content */}

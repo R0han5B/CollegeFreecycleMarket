@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { useAuthStore } from '@/store/auth-store';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { ImageFallback } from '@/components/ui/ImageFallback';
 import { Trash2, ShoppingCart, MessageCircle } from 'lucide-react';
 import type { Watchlist } from '@/types';
 
@@ -137,20 +137,19 @@ export default function CartPage() {
                       className="relative aspect-video bg-gray-100 cursor-pointer"
                       onClick={() => router.push(`/item/${item.id}`)}
                     >
-                      {item.image ? (
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-                          <span className="text-5xl font-bold text-gray-300">
-                            {item.title.charAt(0)}
-                          </span>
-                        </div>
-                      )}
+                      <ImageFallback
+                        src={item.image}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                        fallback={
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                            <span className="text-5xl font-bold text-gray-300">
+                              {item.title.charAt(0)}
+                            </span>
+                          </div>
+                        }
+                      />
                       {item.isSold && (
                         <Badge className="absolute top-3 left-3 bg-red-500">Sold</Badge>
                       )}

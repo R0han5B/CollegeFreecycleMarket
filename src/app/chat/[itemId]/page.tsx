@@ -9,8 +9,8 @@ import { ChatBubble } from '@/components/chat/ChatBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, User } from 'lucide-react';
-import Image from 'next/image';
+import { ArrowLeft, Package, User } from 'lucide-react';
+import { ImageFallback } from '@/components/ui/ImageFallback';
 import { io, Socket } from 'socket.io-client';
 import type { Message, Item } from '@/types';
 
@@ -274,16 +274,19 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3 flex-1">
-              {item.image && (
-                <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              )}
+              <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
+                <ImageFallback
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                  fallback={
+                    <div className="flex h-full w-full items-center justify-center">
+                      <Package className="h-5 w-5 text-gray-400" />
+                    </div>
+                  }
+                />
+              </div>
               <div className="flex-1 min-w-0">
                 <h1 className="font-semibold text-lg truncate">{item.title}</h1>
                 <p className="text-sm text-muted-foreground">
