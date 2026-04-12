@@ -58,6 +58,28 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { title, description, price, condition, categoryId, sellerId, image, images } = body;
+
+    if (!title || !description || !condition || !categoryId || !sellerId) {
+      return NextResponse.json(
+        { error: 'Title, description, condition, category, and seller are required' },
+        { status: 400 }
+      );
+    }
+
+    const parsedPrice =
+      typeof price === 'number'
+        ? price
+        : typeof price === 'string'
+          ? parseInt(price, 10)
+          : 0;
+
+    if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+      return NextResponse.json(
+        { error: 'Price must be a valid non-negative number' },
+        { status: 400 }
+      );
+    }
+
     const normalizedImages = Array.isArray(images)
       ? images.filter((imageUrl): imageUrl is string => typeof imageUrl === 'string' && imageUrl.trim().length > 0)
       : image
@@ -68,7 +90,7 @@ export async function POST(request: NextRequest) {
       data: {
         title,
         description,
-        price: parseInt(price),
+        price: parsedPrice,
         condition,
         categoryId,
         sellerId,
@@ -91,7 +113,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Create item error:', error);
     return NextResponse.json(
-      { error: 'Failed to create item' },
+      { error: error instanceof Error ? error.message : 'Failed to create item' },
       { status: 500 }
     );
   }

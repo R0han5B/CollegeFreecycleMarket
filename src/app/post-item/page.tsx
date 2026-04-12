@@ -149,6 +149,15 @@ export default function PostItemPage() {
       return;
     }
 
+    if (!user?.id) {
+      toast({
+        variant: 'destructive',
+        title: 'You need to sign in again',
+        description: 'Your session was not available while posting the item.',
+      });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
