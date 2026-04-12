@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { ImageFallback } from '@/components/ui/ImageFallback';
+import { getPrimaryItemImage } from '@/lib/utils';
 import { Trash2, ShoppingCart, MessageCircle } from 'lucide-react';
 import type { Watchlist } from '@/types';
 
@@ -131,19 +132,21 @@ export default function CartPage() {
 
                 if (!item) return null;
 
+                const primaryImage = getPrimaryItemImage(item);
+
                 return (
                   <Card key={entry.id} className="overflow-hidden h-full flex flex-col">
                     <div
-                      className="relative aspect-video bg-gray-100 cursor-pointer"
+                      className="relative aspect-video bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer"
                       onClick={() => router.push(`/item/${item.id}`)}
                     >
                       <ImageFallback
-                        src={item.image}
+                        src={primaryImage}
                         alt={item.title}
                         fill
-                        className="object-cover"
+                        className="object-contain p-4"
                         fallback={
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                          <div className="w-full h-full flex items-center justify-center">
                             <span className="text-5xl font-bold text-gray-300">
                               {item.title.charAt(0)}
                             </span>
@@ -156,24 +159,27 @@ export default function CartPage() {
                     </div>
 
                     <CardContent className="p-5 flex-1 space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h2 className="text-xl font-semibold text-gray-900 line-clamp-2">
-                            {item.title}
-                          </h2>
-                          <p className="text-orange-600 font-bold mt-2">
-                            {item.price === 0 ? 'FREE' : `₹${item.price.toLocaleString('en-IN')}`}
-                          </p>
-                        </div>
-                        <Badge variant="outline">{item.category?.name}</Badge>
+                      <div>
+                        <h2 className="text-xl font-semibold text-gray-900 line-clamp-2">
+                          {item.title}
+                        </h2>
+                        <p className="text-orange-600 font-bold mt-2">
+                          {item.price === 0 ? 'FREE' : `₹${item.price.toLocaleString('en-IN')}`}
+                        </p>
                       </div>
 
                       <p className="text-gray-600 line-clamp-3">{item.description}</p>
 
-                      <div className="flex items-center gap-2 text-sm text-gray-500">
-                        <span>{item.seller?.name || item.seller?.email?.split('@')[0]}</span>
-                        <span>•</span>
-                        <span>{item.condition}</span>
+                      <div className="space-y-1 text-sm text-gray-500">
+                        <p>
+                          Category: <span className="font-medium text-gray-700">{item.category?.name || 'N/A'}</span>
+                        </p>
+                        <p>
+                          Condition: <span className="font-medium text-gray-700">{item.condition}</span>
+                        </p>
+                        <p>
+                          Seller: <span className="font-medium text-gray-700">{item.seller?.name || item.seller?.email?.split('@')[0]}</span>
+                        </p>
                       </div>
                     </CardContent>
 

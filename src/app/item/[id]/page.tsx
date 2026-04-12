@@ -8,6 +8,7 @@ import Footer from '@/components/layout/Footer';
 import ImageModal from '@/components/marketplace/ImageModal';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { getItemImages } from '@/lib/utils';
 import {
   Card,
   CardContent,
@@ -15,15 +16,13 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import {
-  MapPin,
   Calendar,
   User,
-  Mail,
   Phone,
-  Package,
-  Tag,
   MessageCircle,
   ShoppingCart,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { ImageFallback } from '@/components/ui/ImageFallback';
 import type { Item } from '@/types';
@@ -38,6 +37,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
   const [mounted, setMounted] = useState(false);
   const [savedToCart, setSavedToCart] = useState(false);
   const [cartLoading, setCartLoading] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   useEffect(() => {
     setMounted(true);
@@ -66,6 +66,7 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
       const data = await response.json();
       if (response.ok) {
         setItem(data.item);
+        setSelectedImageIndex(0);
       } else {
         router.push('/dashboard');
       }
@@ -199,14 +200,19 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   const isOwner = user?.id === item.sellerId;
+  const itemImages = getItemImages(item);
+  const activeImage = itemImages[selectedImageIndex] ?? null;
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <ImageModal
+        key={`${item.id}-${selectedImageIndex}-${imageModalOpen ? 'open' : 'closed'}`}
         isOpen={imageModalOpen}
         onClose={() => setImageModalOpen(false)}
         imageUrl={item.image}
+        imageUrls={item.images}
+        initialIndex={selectedImageIndex}
         alt={item.title}
       />
 
@@ -223,21 +229,53 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
           {/* Image Section */}
           <div>
             <Card className="overflow-hidden">
-              <div className="relative aspect-square bg-gray-100 cursor-pointer" onClick={() => item.image && setImageModalOpen(true)}>
+              <div
+                className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 cursor-pointer"
+                onClick={() => activeImage && setImageModalOpen(true)}
+              >
                 <ImageFallback
-                  src={item.image}
+                  src={activeImage}
                   alt={item.title}
                   fill
-                  className="object-cover"
+                  className="object-contain p-6"
                   priority
                   fallback={
-                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                    <div className="w-full h-full flex items-center justify-center">
                       <span className="text-6xl font-bold text-gray-300">
                         {item.title.charAt(0)}
                       </span>
                     </div>
                   }
                 />
+                {itemImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedImageIndex((current) => (current === 0 ? itemImages.length - 1 : current - 1));
+                      }}
+                      className="absolute left-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-700 shadow transition hover:bg-white"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedImageIndex((current) => (current === itemImages.length - 1 ? 0 : current + 1));
+                      }}
+                      className="absolute right-4 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-gray-700 shadow transition hover:bg-white"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <div className="absolute bottom-4 right-4 rounded-full bg-black/60 px-3 py-1 text-sm text-white">
+                      {selectedImageIndex + 1}/{itemImages.length}
+                    </div>
+                  </>
+                )}
                 {item.isSold && (
                   <Badge className="absolute top-4 left-4 bg-red-500 text-lg px-4 py-2">
                     SOLD
@@ -249,6 +287,30 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
                   </Badge>
                 )}
               </div>
+              {itemImages.length > 1 && (
+                <div className="grid grid-cols-4 gap-3 border-t bg-white p-4 sm:grid-cols-5">
+                  {itemImages.map((imageUrl, index) => (
+                    <button
+                      key={`${imageUrl}-${index}`}
+                      type="button"
+                      onClick={() => setSelectedImageIndex(index)}
+                      className={`relative aspect-square overflow-hidden rounded-lg border-2 transition ${
+                        selectedImageIndex === index ? 'border-orange-500' : 'border-transparent'
+                      }`}
+                    >
+                      <ImageFallback
+                        src={imageUrl}
+                        alt={`${item.title} thumbnail ${index + 1}`}
+                        fill
+                        className="object-contain bg-gray-50 p-2"
+                        fallback={
+                          <div className="w-full h-full bg-gray-100" />
+                        }
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
             </Card>
           </div>
 
@@ -258,15 +320,21 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
               <CardHeader>
                 <div className="flex items-start justify-between gap-4">
                   <CardTitle className="text-2xl">{item.title}</CardTitle>
-                  <Badge variant="outline">{item.category?.name}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-baseline gap-3">
+                <div className="space-y-2">
                   <span className="text-3xl font-bold text-orange-600">
                     {item.price === 0 ? 'FREE' : `₹${item.price.toLocaleString('en-IN')}`}
                   </span>
-                  <Badge variant="secondary">{item.condition}</Badge>
+                  <div className="space-y-1 text-sm text-gray-600">
+                    <p>
+                      Category: <span className="font-medium text-gray-800">{item.category?.name || 'N/A'}</span>
+                    </p>
+                    <p>
+                      Condition: <span className="font-medium text-gray-800">{item.condition}</span>
+                    </p>
+                  </div>
                 </div>
 
                 <p className="text-gray-700 leading-relaxed">

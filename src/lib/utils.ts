@@ -28,3 +28,21 @@ export function sanitizeImageUrl(url?: string | null) {
 
   return normalizedUrl
 }
+
+export function getItemImages(item?: { image?: string | null; images?: string[] | null } | null) {
+  const images = (item?.images ?? [])
+    .map((imageUrl) => sanitizeImageUrl(imageUrl))
+    .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
+
+  const primaryImage = sanitizeImageUrl(item?.image)
+
+  if (primaryImage && !images.includes(primaryImage)) {
+    images.unshift(primaryImage)
+  }
+
+  return images
+}
+
+export function getPrimaryItemImage(item?: { image?: string | null; images?: string[] | null } | null) {
+  return getItemImages(item)[0] ?? null
+}

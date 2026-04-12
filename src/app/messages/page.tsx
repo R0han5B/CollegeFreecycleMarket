@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { MessageSquare, ShoppingBag, User as UserIcon, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ImageFallback } from '@/components/ui/ImageFallback';
+import { getPrimaryItemImage } from '@/lib/utils';
 
 interface Conversation {
   otherUserId: string;
@@ -23,6 +24,7 @@ interface Conversation {
     id: string;
     title: string;
     image: string | null;
+    images?: string[];
     price: number;
   };
   lastMessage: {
@@ -138,10 +140,10 @@ export default function MessagesPage() {
                       {/* Item Image */}
                       <div className="relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                         <ImageFallback
-                          src={conversation.item.image}
+                          src={getPrimaryItemImage(conversation.item)}
                           alt={conversation.item.title}
                           fill
-                          className="object-cover"
+                          className="object-contain p-1"
                           fallback={
                             <div className="w-full h-full flex items-center justify-center">
                               <ShoppingBag className="h-6 w-6 text-gray-400" />

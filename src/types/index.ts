@@ -23,6 +23,7 @@ export interface Item {
   price: number;
   condition: string;
   image: string | null;
+  images: string[];
   isFeatured: boolean;
   isSold: boolean;
   categoryId: string;

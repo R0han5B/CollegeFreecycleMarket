@@ -57,7 +57,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, price, condition, categoryId, sellerId, image } = body;
+    const { title, description, price, condition, categoryId, sellerId, image, images } = body;
+    const normalizedImages = Array.isArray(images)
+      ? images.filter((imageUrl): imageUrl is string => typeof imageUrl === 'string' && imageUrl.trim().length > 0)
+      : image
+        ? [image]
+        : [];
 
     const item = await db.item.create({
       data: {
@@ -67,7 +72,8 @@ export async function POST(request: NextRequest) {
         condition,
         categoryId,
         sellerId,
-        image,
+        image: normalizedImages[0] ?? null,
+        images: normalizedImages,
       },
       include: {
         category: true,

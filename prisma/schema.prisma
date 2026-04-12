@@ -47,6 +47,7 @@ model Item {
   price       Int
   condition   String
   image       String?
+  images      String[] @default([])
   isFeatured  Boolean  @default(false)
   isSold      Boolean  @default(false)
 

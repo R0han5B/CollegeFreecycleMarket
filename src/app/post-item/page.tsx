@@ -28,8 +28,9 @@ export default function PostItemPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -77,48 +78,63 @@ export default function PostItemPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    // Preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setImagePreview(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload
-    const formDataUpload = new FormData();
-    formDataUpload.append('file', file);
+    setUploadingImages(true);
 
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataUpload,
-      });
+      const previewPromises = files.map(
+        (file) =>
+          new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error('Failed to read image preview'));
+            reader.readAsDataURL(file);
+          })
+      );
 
-      const data = await response.json();
-      if (response.ok) {
-        setUploadedImageUrl(data.imageUrl);
-        toast({
-          title: 'Image uploaded successfully',
+      const nextPreviews = await Promise.all(previewPromises);
+      const nextUploadedUrls: string[] = [];
+
+      for (const file of files) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('file', file);
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formDataUpload,
         });
-      } else {
-        throw new Error(data.error || 'Upload failed');
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Upload failed');
+        }
+
+        nextUploadedUrls.push(data.imageUrl);
       }
+
+      setImagePreviews((current) => [...current, ...nextPreviews]);
+      setUploadedImageUrls((current) => [...current, ...nextUploadedUrls]);
+      toast({
+        title: 'Images uploaded successfully',
+        description: `${nextUploadedUrls.length} image${nextUploadedUrls.length === 1 ? '' : 's'} ready for your listing`,
+      });
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Upload failed',
         description: error.message || 'Failed to upload image',
       });
-      setImagePreview(null);
+    } finally {
+      setUploadingImages(false);
+      e.target.value = '';
     }
   };
 
-  const handleRemoveImage = () => {
-    setImagePreview(null);
-    setUploadedImageUrl(null);
+  const handleRemoveImage = (indexToRemove: number) => {
+    setImagePreviews((current) => current.filter((_, index) => index !== indexToRemove));
+    setUploadedImageUrls((current) => current.filter((_, index) => index !== indexToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,7 +159,8 @@ export default function PostItemPage() {
           ...formData,
           price: parseInt(formData.price) || 0,
           sellerId: user?.id,
-          image: uploadedImageUrl,
+          image: uploadedImageUrls[0] ?? null,
+          images: uploadedImageUrls,
         }),
       });
 
@@ -205,43 +222,73 @@ export default function PostItemPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Image Upload */}
                 <div className="space-y-2">
-                  <Label>Image (Optional)</Label>
+                  <Label>Images (Optional)</Label>
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-500 transition-colors">
-                    {imagePreview ? (
-                      <div className="relative">
-                        <img
-                          src={imagePreview}
-                          alt="Preview"
-                          className="max-h-64 mx-auto rounded-lg"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute top-2 right-2"
-                          onClick={handleRemoveImage}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
+                    {imagePreviews.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                          {imagePreviews.map((imagePreview, index) => (
+                            <div
+                              key={`${imagePreview}-${index}`}
+                              className="relative rounded-lg border bg-gray-50 p-3"
+                            >
+                              <div className="relative h-40 overflow-hidden rounded-md bg-white">
+                                <img
+                                  src={imagePreview}
+                                  alt={`Preview ${index + 1}`}
+                                  className="h-full w-full object-contain"
+                                />
+                              </div>
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-5 right-5"
+                                onClick={() => handleRemoveImage(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-center">
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            className="hidden"
+                            id="image-upload"
+                          />
+                          <Label htmlFor="image-upload" className="cursor-pointer">
+                            <Button type="button" variant="outline" asChild disabled={uploadingImages}>
+                              <span>
+                                <Upload className="h-4 w-4 mr-2" />
+                                {uploadingImages ? 'Uploading...' : 'Add More Images'}
+                              </span>
+                            </Button>
+                          </Label>
+                        </div>
                       </div>
                     ) : (
                       <div>
                         <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-2" />
                         <p className="text-sm text-gray-600 mb-2">
-                          Click to upload an image
+                          Click to upload one or more images
                         </p>
                         <Input
                           type="file"
                           accept="image/*"
+                          multiple
                           onChange={handleImageUpload}
                           className="hidden"
                           id="image-upload"
                         />
                         <Label htmlFor="image-upload" className="cursor-pointer">
-                          <Button type="button" variant="outline" asChild>
+                          <Button type="button" variant="outline" asChild disabled={uploadingImages}>
                             <span>
                               <Upload className="h-4 w-4 mr-2" />
-                              Choose File
+                              {uploadingImages ? 'Uploading...' : 'Choose Images'}
                             </span>
                           </Button>
                         </Label>
@@ -339,7 +386,7 @@ export default function PostItemPage() {
                   <Button
                     type="submit"
                     className="flex-1 bg-orange-500 hover:bg-orange-600"
-                    disabled={submitting}
+                    disabled={submitting || uploadingImages}
                   >
                     {submitting ? 'Posting...' : 'Post Item'}
                   </Button>

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Package, User } from 'lucide-react';
 import { ImageFallback } from '@/components/ui/ImageFallback';
+import { getPrimaryItemImage } from '@/lib/utils';
 import { io, Socket } from 'socket.io-client';
 import type { Message, Item } from '@/types';
 
@@ -253,7 +254,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
 
   // Check if current user is the seller
   const isSeller = user.id === item.sellerId;
-  const chatPartner = isSeller ? null : item.seller;
+  const primaryImage = getPrimaryItemImage(item);
 
   // If user is the seller, we need to find who they're chatting with
   // For now, we'll show the item info and allow the seller to see incoming messages
@@ -276,10 +277,10 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
             <div className="flex items-center gap-3 flex-1">
               <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
                 <ImageFallback
-                  src={item.image}
+                  src={primaryImage}
                   alt={item.title}
                   fill
-                  className="object-cover"
+                  className="object-contain p-1"
                   fallback={
                     <div className="flex h-full w-full items-center justify-center">
                       <Package className="h-5 w-5 text-gray-400" />
