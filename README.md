@@ -48,6 +48,7 @@ Notes:
 
 - Do not wrap env values in quotes unless they are actually needed.
 - If a free OpenRouter model is rate-limited, switch `OPENROUTER_MODEL` to another model.
+- If Pusher env vars are missing, messaging falls back to periodic polling instead of true realtime updates.
 
 ## Getting Started
 
@@ -79,6 +80,7 @@ http://localhost:3000
 ## Dev Notes
 
 - Realtime messaging uses Pusher, so you do not need a custom websocket server.
+- Without Pusher credentials, chat and inbox updates still refresh automatically using short polling.
 - `bun run dev` runs a normal Next.js dev server on `localhost:3000`.
 - The dev script uses a separate `.next-dev` cache folder.
 

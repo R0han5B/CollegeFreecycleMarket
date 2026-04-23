@@ -5,8 +5,8 @@ import { Message } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ImageOff } from 'lucide-react';
-import { ImageFallback } from '@/components/ui/ImageFallback';
 import ImageModal from '@/components/marketplace/ImageModal';
+import { sanitizeImageUrl } from '@/lib/utils';
 
 interface ChatBubbleProps {
   message: Message;
@@ -16,7 +16,8 @@ interface ChatBubbleProps {
 
 export function ChatBubble({ message, isOwn, showAvatar = true }: ChatBubbleProps) {
   const [isImageOpen, setIsImageOpen] = useState(false);
-  const [canOpenImage, setCanOpenImage] = useState(Boolean(message.imageUrl));
+  const safeImageUrl = sanitizeImageUrl(message.imageUrl);
+  const [canOpenImage, setCanOpenImage] = useState(Boolean(safeImageUrl));
   const initials = message.sender?.name
     ? message.sender.name
         .split(' ')
@@ -44,7 +45,7 @@ export function ChatBubble({ message, isOwn, showAvatar = true }: ChatBubbleProp
             }`}
           >
             {message.content && <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>}
-            {message.imageUrl && (
+            {safeImageUrl && (
               <div className="mt-3">
                 <button
                   type="button"
@@ -55,23 +56,22 @@ export function ChatBubble({ message, isOwn, showAvatar = true }: ChatBubbleProp
                   disabled={!canOpenImage}
                 >
                   <div className="relative w-full max-w-[300px] overflow-hidden rounded-xl border border-slate-200 transition-opacity hover:opacity-90">
-                    <ImageFallback
-                      src={message.imageUrl}
-                      alt="Shared image"
-                      width={300}
-                      height={200}
-                      className="h-auto w-full object-cover"
-                      unoptimized
-                      fallback={
-                        <div className="flex h-[200px] w-[300px] max-w-full items-center justify-center bg-muted text-muted-foreground">
-                          <span className="flex items-center gap-2 text-sm">
-                            <ImageOff className="h-4 w-4" />
-                            Image unavailable
-                          </span>
-                        </div>
-                      }
-                      onError={() => setCanOpenImage(false)}
-                    />
+                    {canOpenImage ? (
+                      <img
+                        src={safeImageUrl}
+                        alt="Shared image"
+                        className="h-auto w-full object-cover"
+                        loading="lazy"
+                        onError={() => setCanOpenImage(false)}
+                      />
+                    ) : (
+                      <div className="flex h-[200px] w-[300px] max-w-full items-center justify-center bg-muted text-muted-foreground">
+                        <span className="flex items-center gap-2 text-sm">
+                          <ImageOff className="h-4 w-4" />
+                          Image unavailable
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </button>
               </div>
@@ -82,7 +82,7 @@ export function ChatBubble({ message, isOwn, showAvatar = true }: ChatBubbleProp
           </span>
         </div>
       </div>
-      <ImageModal isOpen={isImageOpen} onClose={() => setIsImageOpen(false)} imageUrl={canOpenImage ? message.imageUrl : null} alt="Shared image" />
+      <ImageModal isOpen={isImageOpen} onClose={() => setIsImageOpen(false)} imageUrl={canOpenImage ? safeImageUrl : null} alt="Shared image" />
     </>
   );
 }
