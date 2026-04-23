@@ -115,6 +115,10 @@ export default function Header() {
       }
     });
 
+    channel.bind(PUSHER_EVENTS.messageDeleted, () => {
+      void fetchUnreadCount();
+    });
+
     channelRef.current = channel;
     return () => {
       window.clearTimeout(initialFetchTimeout);

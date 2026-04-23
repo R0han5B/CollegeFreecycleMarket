@@ -4,4 +4,5 @@ export function getUserChannelName(userId: string) {
 
 export const PUSHER_EVENTS = {
   messageCreated: "message-created",
+  messageDeleted: "message-deleted",
 } as const;

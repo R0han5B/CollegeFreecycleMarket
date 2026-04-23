@@ -2,6 +2,7 @@ node_modules
 .next
 .next-*
 .next-dev
+.next-custom-server
 out
 build
 coverage
@@ -26,5 +27,3 @@ next-env.d.ts
 .idea/
 
 /skills/
-.next
-.next-custom-server

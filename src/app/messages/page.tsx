@@ -99,6 +99,10 @@ export default function MessagesPage() {
       void fetchConversations(false);
     });
 
+    channel.bind(PUSHER_EVENTS.messageDeleted, () => {
+      void fetchConversations(false);
+    });
+
     return () => {
       channel.unbind_all();
       pusher.unsubscribe(getUserChannelName(user.id));

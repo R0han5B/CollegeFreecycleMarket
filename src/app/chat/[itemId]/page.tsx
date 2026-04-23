@@ -40,6 +40,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
   const [otherUser, setOtherUser] = useState<{ id: string; name: string | null; email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -133,6 +134,25 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
       scrollToBottom();
     });
 
+    channel.bind(
+      PUSHER_EVENTS.messageDeleted,
+      (payload: { messageId?: string; itemId?: string; senderId?: string; receiverId?: string }) => {
+        if (!payload.messageId || payload.itemId !== item.id) {
+          return;
+        }
+
+        const isSameConversation =
+          (payload.senderId === user.id && payload.receiverId === otherUser.id) ||
+          (payload.senderId === otherUser.id && payload.receiverId === user.id);
+
+        if (!isSameConversation) {
+          return;
+        }
+
+        setMessages((prev) => prev.filter((message) => message.id !== payload.messageId));
+      }
+    );
+
     return () => {
       channel.unbind_all();
       pusher.unsubscribe(getUserChannelName(user.id));
@@ -191,7 +211,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
       const response = await fetch(`/api/messages/${itemId}?userId=${userId}&otherUserId=${otherUserId}`);
       const data = await response.json();
       if (response.ok) {
-        setMessages((prev) => mergeMessagesById(prev, data.messages));
+        setMessages(data.messages);
         setTimeout(scrollToBottom, 100);
       }
     } catch (error) {
@@ -224,6 +244,39 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
       }
     } catch (error) {
       console.error('Failed to send message:', error);
+    }
+  };
+
+  const handleDeleteMessage = async (message: Message) => {
+    if (!user || deletingMessageId) {
+      return;
+    }
+
+    const confirmed = window.confirm('Delete this message for both users?');
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingMessageId(message.id);
+
+    try {
+      const response = await fetch('/api/messages', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId: message.id,
+          userId: user.id,
+        }),
+      });
+
+      if (response.ok) {
+        setMessages((prev) => prev.filter((currentMessage) => currentMessage.id !== message.id));
+      }
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    } finally {
+      setDeletingMessageId(null);
     }
   };
 
@@ -305,6 +358,8 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
                     key={`${message.id}-${message.createdAt}-${index}`}
                     message={message}
                     isOwn={message.senderId === user.id}
+                    onDelete={message.senderId === user.id ? handleDeleteMessage : undefined}
+                    isDeleting={deletingMessageId === message.id}
                   />
                 ))
               )}

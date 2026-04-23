@@ -4,17 +4,20 @@ import { useState } from 'react';
 import { Message } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ImageOff } from 'lucide-react';
+import { ImageOff, Trash2 } from 'lucide-react';
 import ImageModal from '@/components/marketplace/ImageModal';
 import { sanitizeImageUrl } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface ChatBubbleProps {
   message: Message;
   isOwn: boolean;
   showAvatar?: boolean;
+  onDelete?: (message: Message) => void;
+  isDeleting?: boolean;
 }
 
-export function ChatBubble({ message, isOwn, showAvatar = true }: ChatBubbleProps) {
+export function ChatBubble({ message, isOwn, showAvatar = true, onDelete, isDeleting = false }: ChatBubbleProps) {
   const [isImageOpen, setIsImageOpen] = useState(false);
   const safeImageUrl = sanitizeImageUrl(message.imageUrl);
   const [canOpenImage, setCanOpenImage] = useState(Boolean(safeImageUrl));
@@ -36,6 +39,19 @@ export function ChatBubble({ message, isOwn, showAvatar = true }: ChatBubbleProp
           </Avatar>
         )}
         <div className={`flex max-w-[78%] flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+          {isOwn && onDelete && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="mb-1 h-auto px-2 py-1 text-xs text-slate-500 hover:text-red-600"
+              onClick={() => onDelete(message)}
+              disabled={isDeleting}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          )}
           {!isOwn && message.sender?.name && <span className="mb-1 text-xs text-slate-500">{message.sender.name}</span>}
           <div
             className={`rounded-[1.35rem] border px-4 py-3 shadow-[0_20px_50px_rgba(15,23,42,0.22)] ${
