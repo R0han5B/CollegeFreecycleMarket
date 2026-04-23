@@ -17,8 +17,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/store/auth-store';
 import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { cn } from '@/lib/utils';
+import { getPusherClient, hasPusherClientEnv } from '@/lib/pusher-client';
+import { getUserChannelName, PUSHER_EVENTS } from '@/lib/pusher-shared';
 
 export default function Header() {
   const pathname = usePathname();
@@ -29,7 +30,7 @@ export default function Header() {
   const [cartCount, setCartCount] = useState(0);
   const [hidden, setHidden] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
+  const channelRef = useRef<ReturnType<ReturnType<typeof getPusherClient>['subscribe']> | null>(null);
   const lastScrollY = useRef(0);
 
   const navItems = [
@@ -92,30 +93,47 @@ export default function Header() {
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return;
 
-    const socket = io(undefined, {
-      transports: ['websocket', 'polling'],
-    });
-
-    socket.on('connect', () => {
-      socket.emit('user:join', user.id);
-    });
-
-    socket.on('message:receive', (data: { receiverId?: string }) => {
-      if (data.receiverId === user.id) {
-        setUnreadCount((prev) => prev + 1);
-      }
-    });
-
-    socketRef.current = socket;
     const initialFetchTimeout = window.setTimeout(() => {
       void fetchUnreadCount();
       void fetchCartCount();
     }, 0);
 
+    if (!hasPusherClientEnv()) {
+      return () => window.clearTimeout(initialFetchTimeout);
+    }
+
+    const pusher = getPusherClient();
+    if (!pusher) {
+      return () => window.clearTimeout(initialFetchTimeout);
+    }
+
+    const channel = pusher.subscribe(getUserChannelName(user.id));
+
+    channel.bind(PUSHER_EVENTS.messageCreated, (payload: { message?: { receiverId?: string } }) => {
+      if (payload.message?.receiverId === user.id) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    channelRef.current = channel;
     return () => {
       window.clearTimeout(initialFetchTimeout);
-      socket.disconnect();
+      channel.unbind_all();
+      pusher.unsubscribe(getUserChannelName(user.id));
     };
+  }, [isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || hasPusherClientEnv()) {
+      return;
+    }
+
+    const pollInterval = window.setInterval(() => {
+      void fetchUnreadCount();
+      void fetchCartCount();
+    }, 5000);
+
+    return () => window.clearInterval(pollInterval);
   }, [isAuthenticated, user?.id]);
 
   useEffect(() => {

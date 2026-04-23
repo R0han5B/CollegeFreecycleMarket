@@ -9,13 +9,13 @@ const nextBin = path.join(projectRoot, "node_modules", "next", "dist", "bin", "n
 
 const child = spawn(
   process.execPath,
-  [nextBin, "dev", "--hostname", "0.0.0.0"],
+  [nextBin, "dev", "--hostname", "0.0.0.0", "--port", "3000"],
   {
     cwd: projectRoot,
     stdio: "inherit",
     env: {
       ...process.env,
-      NEXT_DIST_DIR: `.next-bun-dev-${process.pid}`,
+      NEXT_DIST_DIR: ".next-dev",
     },
   }
 );

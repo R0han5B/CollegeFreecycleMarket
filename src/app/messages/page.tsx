@@ -12,6 +12,8 @@ import { MessageSquare, ShoppingBag, User as UserIcon, Clock } from 'lucide-reac
 import { formatDistanceToNow } from 'date-fns';
 import { ImageFallback } from '@/components/ui/ImageFallback';
 import { getPrimaryItemImage } from '@/lib/utils';
+import { getPusherClient, hasPusherClientEnv } from '@/lib/pusher-client';
+import { getUserChannelName, PUSHER_EVENTS } from '@/lib/pusher-shared';
 
 interface Conversation {
   otherUserId: string;
@@ -61,8 +63,11 @@ export default function MessagesPage() {
     }
   }, [mounted, isLoading, isAuthenticated, user?.id, router]);
 
-  const fetchConversations = async () => {
-    setLoading(true);
+  const fetchConversations = async (showLoadingState = true) => {
+    if (showLoadingState) {
+      setLoading(true);
+    }
+
     try {
       const response = await fetch(`/api/messages/conversations?userId=${user?.id}`);
       const data = await response.json();
@@ -72,9 +77,45 @@ export default function MessagesPage() {
     } catch (error) {
       console.error('Failed to fetch conversations:', error);
     } finally {
-      setLoading(false);
+      if (showLoadingState) {
+        setLoading(false);
+      }
     }
   };
+
+  useEffect(() => {
+    if (!user?.id || !isAuthenticated || !hasPusherClientEnv()) {
+      return;
+    }
+
+    const pusher = getPusherClient();
+    if (!pusher) {
+      return;
+    }
+
+    const channel = pusher.subscribe(getUserChannelName(user.id));
+
+    channel.bind(PUSHER_EVENTS.messageCreated, () => {
+      void fetchConversations(false);
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(getUserChannelName(user.id));
+    };
+  }, [isAuthenticated, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !isAuthenticated || hasPusherClientEnv()) {
+      return;
+    }
+
+    const pollInterval = window.setInterval(() => {
+      void fetchConversations(false);
+    }, 5000);
+
+    return () => window.clearInterval(pollInterval);
+  }, [isAuthenticated, user?.id]);
 
   if (!mounted || isLoading) {
     return (

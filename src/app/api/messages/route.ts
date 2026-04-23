@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { getPusherServer, getUserChannelName, hasPusherServerEnv, PUSHER_EVENTS } from '@/lib/pusher-server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -47,6 +48,18 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    if (hasPusherServerEnv()) {
+      try {
+        const pusher = getPusherServer();
+
+        await pusher?.trigger(getUserChannelName(receiverId), PUSHER_EVENTS.messageCreated, {
+          message,
+        });
+      } catch (error) {
+        console.error('Error triggering Pusher message event:', error);
+      }
+    }
 
     return NextResponse.json({ message }, { status: 201 });
   } catch (error) {

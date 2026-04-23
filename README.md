@@ -7,7 +7,7 @@ A campus marketplace for RKNEC students and staff to post, browse, save, and mes
 - Email + OTP based signup and login
 - Post, browse, filter, and manage listings
 - Save items to a watchlist
-- Real-time buyer/seller messaging with Socket.IO
+- Real-time buyer/seller messaging with Pusher
 - Image upload support
 - AI helper bubble for marketplace guidance
 
@@ -20,7 +20,7 @@ A campus marketplace for RKNEC students and staff to post, browse, save, and mes
 - Prisma ORM
 - MongoDB
 - Zustand
-- Socket.IO
+- Pusher Channels
 
 ## Environment Variables
 
@@ -37,6 +37,11 @@ EMAIL_FROM=College Freecycling Market <noreply@example.com>
 
 OPENROUTER_API_KEY=your_openrouter_key
 OPENROUTER_MODEL=qwen/qwen3-next-80b-a3b-instruct:free
+
+NEXT_PUBLIC_PUSHER_KEY=your_pusher_key
+NEXT_PUBLIC_PUSHER_CLUSTER=your_pusher_cluster
+PUSHER_APP_ID=your_pusher_app_id
+PUSHER_SECRET=your_pusher_secret
 ```
 
 Notes:
@@ -73,9 +78,9 @@ http://localhost:3000
 
 ## Dev Notes
 
-- `bun run dev` uses the custom `server.mjs` server, so Socket.IO works in local development.
-- The project keeps a separate `.next-custom-server` cache for the custom dev server.
-- If port `3000` is occupied by a stale project dev process, the launcher clears it automatically.
+- Realtime messaging uses Pusher, so you do not need a custom websocket server.
+- `bun run dev` runs a normal Next.js dev server on `localhost:3000`.
+- The dev script uses a separate `.next-dev` cache folder.
 
 ## Project Structure
 
@@ -92,8 +97,8 @@ public/         static assets
 ## Scripts
 
 ```bash
-bun run dev        # custom dev server on localhost:3000
+bun run dev        # dev server on localhost:3000
 bun run build      # production build
-bun run start      # production server
+bun run start      # production Next server
 bun run lint       # eslint
 ```

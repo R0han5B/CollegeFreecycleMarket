@@ -12,8 +12,9 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, Package, User } from 'lucide-react';
 import { ImageFallback } from '@/components/ui/ImageFallback';
 import { getPrimaryItemImage } from '@/lib/utils';
-import { io, Socket } from 'socket.io-client';
 import type { Message, Item } from '@/types';
+import { getPusherClient, hasPusherClientEnv } from '@/lib/pusher-client';
+import { getUserChannelName, PUSHER_EVENTS } from '@/lib/pusher-shared';
 
 function mergeMessagesById(current: Message[], incoming: Message[]) {
   const seen = new Set<string>();
@@ -39,9 +40,8 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
   const [otherUser, setOtherUser] = useState<{ id: string; name: string | null; email: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -82,25 +82,6 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
               );
               setMessages(conversationMessages);
 
-              const socketInstance = io(undefined, {
-                transports: ['websocket', 'polling'],
-              });
-
-              socketInstance.on('connect', () => {
-                socketInstance.emit('user:join', user.id);
-              });
-
-              socketInstance.on('message:receive', (newMessage: Message) => {
-                if (
-                  (newMessage.senderId === user.id && newMessage.receiverId === buyerId) ||
-                  (newMessage.senderId === buyerId && newMessage.receiverId === user.id)
-                ) {
-                  setMessages((prev) => mergeMessagesById(prev, [newMessage]));
-                  scrollToBottom();
-                }
-              });
-
-              setSocket(socketInstance);
             }
           }
         });
@@ -113,30 +94,74 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
       });
 
       fetchMessages(item.id, user.id, sellerId);
-
-      const socketInstance = io(undefined, {
-        transports: ['websocket', 'polling'],
-      });
-
-      socketInstance.on('connect', () => {
-        socketInstance.emit('user:join', user.id);
-      });
-
-      socketInstance.on('message:receive', (newMessage: Message) => {
-        setMessages((prev) => mergeMessagesById(prev, [newMessage]));
-        scrollToBottom();
-      });
-
-      setSocket(socketInstance);
-
-      return () => {
-        socketInstance.disconnect();
-      };
     }
   }, [item, user]);
 
+  useEffect(() => {
+    if (!user?.id || !otherUser?.id || !item?.id) {
+      return;
+    }
+
+    if (!hasPusherClientEnv()) {
+      return;
+    }
+
+    const pusher = getPusherClient();
+    if (!pusher) {
+      return;
+    }
+
+    const channel = pusher.subscribe(getUserChannelName(user.id));
+
+    channel.bind(PUSHER_EVENTS.messageCreated, (payload: { message?: Message }) => {
+      const newMessage = payload.message;
+
+      if (!newMessage) {
+        return;
+      }
+
+      const isSameConversation =
+        newMessage.itemId === item.id &&
+        ((newMessage.senderId === user.id && newMessage.receiverId === otherUser.id) ||
+          (newMessage.senderId === otherUser.id && newMessage.receiverId === user.id));
+
+      if (!isSameConversation) {
+        return;
+      }
+
+      setMessages((prev) => mergeMessagesById(prev, [newMessage]));
+      scrollToBottom();
+    });
+
+    return () => {
+      channel.unbind_all();
+      pusher.unsubscribe(getUserChannelName(user.id));
+    };
+  }, [item?.id, otherUser?.id, user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !otherUser?.id || !item?.id || hasPusherClientEnv()) {
+      return;
+    }
+
+    const pollInterval = window.setInterval(() => {
+      void fetchMessages(item.id, user.id, otherUser.id);
+    }, 3000);
+
+    return () => window.clearInterval(pollInterval);
+  }, [item?.id, otherUser?.id, user?.id]);
+
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: 'smooth',
+    });
   };
 
   useEffect(() => {
@@ -194,17 +219,6 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
 
       if (response.ok) {
         const data = await response.json();
-
-        socket?.emit('message:send', {
-          messageId: data.message.id,
-          senderId: data.message.senderId,
-          receiverId: data.message.receiverId,
-          itemId: data.message.itemId,
-          content: data.message.content,
-          imageUrl: data.message.imageUrl,
-          createdAt: data.message.createdAt,
-        });
-
         setMessages((prev) => mergeMessagesById(prev, [data.message]));
         scrollToBottom();
       }
@@ -278,7 +292,7 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
           </div>
 
           <Card className="overflow-hidden rounded-[2rem] py-0">
-            <div className="h-[calc(100vh-320px)] min-h-[520px] overflow-y-auto p-4">
+            <div ref={messagesContainerRef} className="h-[calc(100vh-320px)] min-h-[520px] overflow-y-auto p-4">
               {messages.length === 0 ? (
                 <div className="flex h-full flex-col items-center justify-center text-center text-slate-500">
                   <User className="mb-4 h-12 w-12 text-orange-400" />
@@ -294,7 +308,6 @@ export default function ChatPage({ params }: { params: Promise<{ itemId: string 
                   />
                 ))
               )}
-              <div ref={messagesEndRef} />
             </div>
             <ChatInput onSend={handleSendMessage} disabled={!otherUser} />
           </Card>
