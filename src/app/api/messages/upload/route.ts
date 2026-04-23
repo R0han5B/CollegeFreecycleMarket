@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Generate unique filename
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 15);
-    const filename = `${timestamp}-${random}.${file.type.split('/')[1]}`;
+    const filename = `${timestamp}-${random}`;
 
     // Convert file to buffer and upload to Cloudinary
     const bytes = await file.arrayBuffer();

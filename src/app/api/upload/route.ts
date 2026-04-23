@@ -85,10 +85,7 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const fileExtension = file.name.includes('.')
-      ? file.name.split('.').pop()
-      : file.type.split('/')[1];
-    const publicId = `${uuidv4()}${fileExtension ? `.${fileExtension}` : ''}`;
+    const publicId = uuidv4();
     const imageUrl = await uploadToCloudinary(file, buffer, publicId);
 
     return NextResponse.json({ imageUrl });

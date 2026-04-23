@@ -26,6 +26,13 @@ export function sanitizeImageUrl(url?: string | null) {
     return null
   }
 
+  if (
+    normalizedUrl.startsWith("https://res.cloudinary.com/") &&
+    normalizedUrl.includes("/image/upload/")
+  ) {
+    return normalizedUrl.replace("/image/upload/", "/image/upload/f_auto,q_auto/")
+  }
+
   return normalizedUrl
 }
 
