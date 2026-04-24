@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { dedupeTerms, generateSuggestedTags } from '@/lib/item-tags';
+
+const objectIdPattern = /^[a-fA-F0-9]{24}$/;
 
 export async function GET(
   request: NextRequest,
@@ -104,7 +107,108 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { isSold } = body;
+    const { isSold, title, description, price, condition, categoryId, image, images, tags } = body;
+
+    if (
+      typeof title === 'string' ||
+      typeof description === 'string' ||
+      typeof condition === 'string' ||
+      typeof categoryId === 'string' ||
+      typeof price === 'number' ||
+      typeof price === 'string' ||
+      Array.isArray(images) ||
+      Array.isArray(tags) ||
+      typeof image === 'string' ||
+      image === null
+    ) {
+      const existingItem = await db.item.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          price: true,
+          condition: true,
+          categoryId: true,
+          images: true,
+          image: true,
+        },
+      });
+
+      if (!existingItem) {
+        return NextResponse.json(
+          { error: 'Item not found' },
+          { status: 404 }
+        );
+      }
+
+      const nextTitle = typeof title === 'string' ? title : existingItem.title;
+      const nextDescription = typeof description === 'string' ? description : existingItem.description;
+      const nextCondition = typeof condition === 'string' ? condition : existingItem.condition;
+      const nextCategoryId = typeof categoryId === 'string' ? categoryId : existingItem.categoryId;
+      const nextPrice =
+        typeof price === 'number'
+          ? price
+          : typeof price === 'string'
+            ? parseInt(price, 10)
+            : existingItem.price;
+
+      if (Number.isNaN(nextPrice) || nextPrice < 0) {
+        return NextResponse.json(
+          { error: 'Price must be a valid non-negative number' },
+          { status: 400 }
+        );
+      }
+
+      const normalizedImages = Array.isArray(images)
+        ? images.filter((imageUrl): imageUrl is string => typeof imageUrl === 'string' && imageUrl.trim().length > 0)
+        : existingItem.images;
+      const primaryImage =
+        typeof image === 'string'
+          ? image
+          : image === null
+            ? normalizedImages[0] ?? null
+            : normalizedImages[0] ?? existingItem.image ?? null;
+      const normalizedTags = dedupeTerms(Array.isArray(tags) ? tags : []);
+      const categoryRecord = objectIdPattern.test(nextCategoryId)
+        ? await db.category.findUnique({
+            where: { id: nextCategoryId },
+            select: { name: true },
+          })
+        : null;
+      const suggestedTags = await generateSuggestedTags({
+        title: nextTitle,
+        description: nextDescription,
+        categoryName: categoryRecord?.name,
+        existingTags: normalizedTags,
+      });
+
+      const item = await db.item.update({
+        where: { id },
+        data: {
+          title: nextTitle,
+          description: nextDescription,
+          price: nextPrice,
+          condition: nextCondition,
+          categoryId: nextCategoryId,
+          image: primaryImage,
+          images: normalizedImages,
+          tags: dedupeTerms([...normalizedTags, ...suggestedTags]).slice(0, 12),
+        },
+        include: {
+          category: true,
+          seller: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({ item });
+    }
 
     const item = await db.item.update({
       where: { id },

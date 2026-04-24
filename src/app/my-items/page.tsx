@@ -7,7 +7,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ItemCard from '@/components/marketplace/ItemCard';
 import { Button } from '@/components/ui/button';
-import { PlusSquare } from 'lucide-react';
+import { Pencil, PlusSquare } from 'lucide-react';
 import type { Item } from '@/types';
 
 export default function MyItemsPage() {
@@ -114,7 +114,13 @@ export default function MyItemsPage() {
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
               {items.map((item) => (
-                <ItemCard key={item.id} item={item} />
+                <div key={item.id} className="space-y-3">
+                  <ItemCard item={item} />
+                  <Button variant="outline" className="w-full" onClick={() => router.push(`/my-items/${item.id}/edit`)}>
+                    <Pencil className="h-4 w-4" />
+                    Edit Item
+                  </Button>
+                </div>
               ))}
             </div>
           )}

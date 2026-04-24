@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getItemImages } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, User, Phone, MessageCircle, ShoppingCart, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Calendar, User, Phone, MessageCircle, ShoppingCart, ChevronLeft, ChevronRight, ArrowLeft, Pencil } from 'lucide-react';
 import { ImageFallback } from '@/components/ui/ImageFallback';
 import type { Item } from '@/types';
 
@@ -330,6 +330,10 @@ export default function ItemDetailPage({ params }: { params: Promise<{ id: strin
 
                 {isOwner && (
                   <>
+                    <Button className="flex-1" onClick={() => router.push(`/my-items/${item.id}/edit`)}>
+                      <Pencil className="h-5 w-5" />
+                      Edit Item
+                    </Button>
                     {!item.isSold && (
                       <Button className="flex-1" variant="outline" onClick={handleMarkSold}>
                         Mark as Sold

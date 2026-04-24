@@ -1,7 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { buildSearchTokens, dedupeTerms, generateSuggestedTags, tokenize } from '@/lib/item-tags';
 
 const objectIdPattern = /^[a-fA-F0-9]{24}$/;
+
+function matchesSearch(item: { title: string; description: string; tags: string[] }, query: string) {
+  const queryTokens = dedupeTerms(tokenize(query));
+
+  if (queryTokens.length === 0) {
+    return true;
+  }
+
+  const searchableTokens = buildSearchTokens(item);
+  return queryTokens.every((token) => searchableTokens.has(token));
+}
+
+function getSearchScore(item: { title: string; description: string; tags: string[] }, query: string) {
+  const queryTokens = dedupeTerms(tokenize(query));
+  const titleTokens = new Set(tokenize(item.title));
+  const descriptionTokens = new Set(tokenize(item.description));
+  const tagTokens = new Set((item.tags ?? []).flatMap((tag) => tokenize(tag)));
+
+  return queryTokens.reduce((score, token) => {
+    if (titleTokens.has(token)) return score + 5;
+    if (tagTokens.has(token)) return score + 4;
+    if (descriptionTokens.has(token)) return score + 2;
+    return score;
+  }, 0);
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,13 +36,9 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
 
-    const where: any = {
+    const where: { isSold: boolean; categoryId?: string; isFeatured?: boolean } = {
       isSold: false,
     };
-
-    if (search) {
-      where.title = { contains: search, mode: 'insensitive' };
-    }
 
     if (category && objectIdPattern.test(category)) {
       where.categoryId = category;
@@ -43,7 +65,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({ items });
+    const trimmedSearch = search?.trim() ?? '';
+    const filteredItems = trimmedSearch
+      ? items
+          .filter((item) => matchesSearch(item, trimmedSearch))
+          .sort((a, b) => getSearchScore(b, trimmedSearch) - getSearchScore(a, trimmedSearch))
+      : items;
+
+    return NextResponse.json({ items: filteredItems });
   } catch (error) {
     console.error('Get items error:', error);
     return NextResponse.json(
@@ -56,7 +85,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { title, description, price, condition, categoryId, sellerId, image, images } = body;
+    const { title, description, price, condition, categoryId, sellerId, image, images, tags } = body;
 
     if (!title || !description || !condition || !categoryId || !sellerId) {
       return NextResponse.json(
@@ -85,10 +114,26 @@ export async function POST(request: NextRequest) {
         ? [image]
         : [];
 
+    const categoryRecord = objectIdPattern.test(categoryId)
+      ? await db.category.findUnique({
+          where: { id: categoryId },
+          select: { name: true },
+        })
+      : null;
+
+    const normalizedTags = dedupeTerms(Array.isArray(tags) ? tags : []);
+    const suggestedTags = await generateSuggestedTags({
+      title,
+      description,
+      categoryName: categoryRecord?.name,
+      existingTags: normalizedTags,
+    });
+
     const item = await db.item.create({
       data: {
         title,
         description,
+        tags: dedupeTerms([...normalizedTags, ...suggestedTags]).slice(0, 12),
         price: parsedPrice,
         condition,
         categoryId,

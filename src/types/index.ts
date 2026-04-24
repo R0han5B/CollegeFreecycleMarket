@@ -20,6 +20,7 @@ export interface Item {
   id: string;
   title: string;
   description: string;
+  tags: string[];
   price: number;
   condition: string;
   image: string | null;

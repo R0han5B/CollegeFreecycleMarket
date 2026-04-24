@@ -6,6 +6,9 @@ A campus marketplace for RKNEC students and staff to post, browse, save, and mes
 
 - Email + OTP based signup and login
 - Post, browse, filter, and manage listings
+- Fast search across title, description, and hidden item tags
+- AI-assisted tag suggestions while posting or editing items
+- Edit your own listing details, price, photos, and search tags
 - Save items to a watchlist
 - Real-time buyer/seller messaging with Pusher
 - Image upload support
@@ -55,20 +58,20 @@ Notes:
 Install dependencies:
 
 ```bash
-bun install
+npm install
 ```
 
 Generate Prisma client and sync the database:
 
 ```bash
-bunx prisma generate
-bunx prisma db push
+npm run db:generate
+npm run db:push
 ```
 
 Start the app:
 
 ```bash
-bun run dev
+npm run dev
 ```
 
 The app runs on:
@@ -81,7 +84,9 @@ http://localhost:3000
 
 - Realtime messaging uses Pusher, so you do not need a custom websocket server.
 - Without Pusher credentials, chat and inbox updates still refresh automatically using short polling.
-- `bun run dev` runs a normal Next.js dev server on `localhost:3000`.
+- Search does not call AI live. AI is used during item create/edit to recommend hidden search tags.
+- Hidden tags improve matching for related terms without exposing those tags on listing cards.
+- `npm run dev` runs a normal Next.js dev server on `localhost:3000`.
 - The dev script uses a separate `.next-dev` cache folder.
 
 ## Project Structure
@@ -99,8 +104,10 @@ public/         static assets
 ## Scripts
 
 ```bash
-bun run dev        # dev server on localhost:3000
-bun run build      # production build
-bun run start      # production Next server
-bun run lint       # eslint
+npm run dev        # dev server on localhost:3000
+npm run build      # production build
+npm run start      # production Next server
+npm run lint       # eslint
+npm run db:generate
+npm run db:push
 ```

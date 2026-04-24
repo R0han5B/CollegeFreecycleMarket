@@ -44,6 +44,7 @@ model Item {
   id          String   @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
+  tags        String[] @default([])
   price       Int
   condition   String
   image       String?
