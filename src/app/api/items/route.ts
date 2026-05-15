@@ -35,8 +35,17 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search');
     const category = searchParams.get('category');
     const featured = searchParams.get('featured');
+    const minPriceParam = searchParams.get('minPrice');
+    const maxPriceParam = searchParams.get('maxPrice');
+    const minPrice = minPriceParam ? Number.parseInt(minPriceParam, 10) : null;
+    const maxPrice = maxPriceParam ? Number.parseInt(maxPriceParam, 10) : null;
 
-    const where: { isSold: boolean; categoryId?: string; isFeatured?: boolean } = {
+    const where: {
+      isSold: boolean;
+      categoryId?: string;
+      isFeatured?: boolean;
+      price?: { gte?: number; lte?: number };
+    } = {
       isSold: false,
     };
 
@@ -46,6 +55,18 @@ export async function GET(request: NextRequest) {
 
     if (featured === 'true') {
       where.isFeatured = true;
+    }
+
+    if ((minPrice !== null && !Number.isNaN(minPrice)) || (maxPrice !== null && !Number.isNaN(maxPrice))) {
+      where.price = {};
+
+      if (minPrice !== null && !Number.isNaN(minPrice) && minPrice >= 0) {
+        where.price.gte = minPrice;
+      }
+
+      if (maxPrice !== null && !Number.isNaN(maxPrice) && maxPrice >= 0) {
+        where.price.lte = maxPrice;
+      }
     }
 
     const items = await db.item.findMany({

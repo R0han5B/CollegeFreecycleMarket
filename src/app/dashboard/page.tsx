@@ -10,8 +10,11 @@ import SearchBar from '@/components/marketplace/SearchBar';
 import CategoryFilter from '@/components/marketplace/CategoryFilter';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Slider } from '@/components/ui/slider';
 import type { Item, Category } from '@/types';
 import { ArrowRight, MessageSquare, ShieldCheck, Sparkles, Zap } from 'lucide-react';
+
+const DEFAULT_PRICE_RANGE: [number, number] = [0, 10000];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -20,6 +23,7 @@ export default function DashboardPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [priceRange, setPriceRange] = useState<[number, number]>(DEFAULT_PRICE_RANGE);
   const [itemsLoading, setItemsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
@@ -53,15 +57,22 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchItems = async (search = '', categoryId = null) => {
+  const fetchItems = async (
+    search = '',
+    categoryId: string | null = null,
+    nextPriceRange: [number, number] = DEFAULT_PRICE_RANGE
+  ) => {
     setItemsLoading(true);
     try {
       const params = new URLSearchParams();
       const trimmedSearch = search.trim();
       const normalizedCategoryId = typeof categoryId === 'string' && categoryId.length > 0 ? categoryId : null;
+      const [minPrice, maxPrice] = nextPriceRange;
 
       if (trimmedSearch) params.set('search', trimmedSearch);
       if (normalizedCategoryId) params.set('category', normalizedCategoryId);
+      if (minPrice > DEFAULT_PRICE_RANGE[0]) params.set('minPrice', String(minPrice));
+      if (maxPrice < DEFAULT_PRICE_RANGE[1]) params.set('maxPrice', String(maxPrice));
 
       const query = params.toString();
       const endpoint = query ? `/api/items?${query}` : '/api/items';
@@ -90,12 +101,24 @@ export default function DashboardPage() {
   };
 
   const handleSearch = () => {
-    fetchItems(searchQuery, selectedCategory);
+    fetchItems(searchQuery, selectedCategory, priceRange);
   };
 
   const handleCategoryChange = (categoryId: string | null) => {
     setSelectedCategory(categoryId);
-    fetchItems(searchQuery, categoryId);
+    fetchItems(searchQuery, categoryId, priceRange);
+  };
+
+  const handlePriceChange = (nextRange: number[]) => {
+    if (nextRange.length !== 2) return;
+    setPriceRange([nextRange[0], nextRange[1]]);
+  };
+
+  const handlePriceCommit = (nextRange: number[]) => {
+    if (nextRange.length !== 2) return;
+    const normalizedRange: [number, number] = [nextRange[0], nextRange[1]];
+    setPriceRange(normalizedRange);
+    fetchItems(searchQuery, selectedCategory, normalizedRange);
   };
 
   if (!mounted || isLoading) {
@@ -179,6 +202,46 @@ export default function DashboardPage() {
                     selectedCategory={selectedCategory}
                     onSelectCategory={handleCategoryChange}
                   />
+                </div>
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-4">
+                  <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-sm font-medium uppercase tracking-[0.2em] text-slate-400">
+                        Filter by price
+                      </h3>
+                      <p className="mt-1 text-sm text-slate-600">
+                        ₹{priceRange[0].toLocaleString('en-IN')} to ₹{priceRange[1].toLocaleString('en-IN')}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setPriceRange(DEFAULT_PRICE_RANGE);
+                        fetchItems(searchQuery, selectedCategory, DEFAULT_PRICE_RANGE);
+                      }}
+                      disabled={
+                        priceRange[0] === DEFAULT_PRICE_RANGE[0] && priceRange[1] === DEFAULT_PRICE_RANGE[1]
+                      }
+                    >
+                      Reset price
+                    </Button>
+                  </div>
+
+                  <Slider
+                    min={DEFAULT_PRICE_RANGE[0]}
+                    max={DEFAULT_PRICE_RANGE[1]}
+                    step={100}
+                    value={priceRange}
+                    onValueChange={handlePriceChange}
+                    onValueCommit={handlePriceCommit}
+                    className="py-2"
+                  />
+                  <div className="mt-3 flex items-center justify-between text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+                    <span>₹0</span>
+                    <span>₹10,000</span>
+                  </div>
                 </div>
               </div>
             </div>
